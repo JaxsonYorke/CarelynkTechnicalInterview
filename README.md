@@ -117,6 +117,49 @@ After bootstrap/compose startup:
 - backend: `http://localhost:3001`
 - postgres: `localhost:5432`
 
+## Seed dummy data
+
+After the stack is running, seed comprehensive demo data:
+
+- Windows:
+
+```powershell
+.\seed-dummy-data.ps1
+```
+
+- Linux/macOS:
+
+```bash
+chmod +x ./seed-dummy-data.sh
+./seed-dummy-data.sh
+```
+
+You can also run backend seeding directly:
+
+```bash
+cd backend
+npm run seed:dummy
+```
+
+## Demo login credentials
+
+All caregiver demo users use password: `Caregiver123!`  
+All care seeker demo users use password: `Seeker123!`
+
+### Caregiver accounts
+
+- `caregiver.alex@demo.carelynk`
+- `caregiver.blair@demo.carelynk`
+- `caregiver.casey@demo.carelynk`
+- `caregiver.devon@demo.carelynk`
+- `caregiver.elliot@demo.carelynk`
+
+### Care seeker accounts
+
+- `seeker.fiona@demo.carelynk`
+- `seeker.gabriel@demo.carelynk`
+- `seeker.harper@demo.carelynk`
+
 For container/network notes and common Docker issues, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
 
 ## Manual Docker Compose commands (fallback)

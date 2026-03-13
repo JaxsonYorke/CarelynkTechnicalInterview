@@ -6,7 +6,8 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "seed:dummy": "ts-node src/db/seedDummy.ts"
   },
   "keywords": [],
   "author": "",

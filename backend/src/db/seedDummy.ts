@@ -34,25 +34,24 @@ async function seedDummyData(): Promise<void> {
     passwordHashes.set(user.id, await authService.hashPassword(user.password));
   }
 
-  await db.begin(async (tx) => {
-    await tx.unsafe(`
-      TRUNCATE TABLE
-        job_accept_requests,
-        matches,
-        care_requests,
-        caregiver_profiles,
-        care_seeker_profiles,
-        experience_options,
-        users
-      RESTART IDENTITY CASCADE;
-    `);
+  await db.unsafe(`
+    TRUNCATE TABLE
+      job_accept_requests,
+      matches,
+      care_requests,
+      caregiver_profiles,
+      care_seeker_profiles,
+      experience_options,
+      users
+    RESTART IDENTITY CASCADE;
+  `);
 
-    for (const user of seedUsers) {
-      await tx`
-        INSERT INTO users (id, email, password_hash, role, created_at)
-        VALUES (${user.id}, ${user.email}, ${passwordHashes.get(user.id)!}, ${user.role}, ${now})
-      `;
-    }
+  for (const user of seedUsers) {
+    await db`
+      INSERT INTO users (id, email, password_hash, role, created_at)
+      VALUES (${user.id}, ${user.email}, ${passwordHashes.get(user.id)!}, ${user.role}, ${now})
+    `;
+  }
 
     const experienceOptions = [
       'Elderly Care',
@@ -65,14 +64,14 @@ async function seedDummyData(): Promise<void> {
       'Companionship',
     ];
 
-    for (const label of experienceOptions) {
-      await tx`
-        INSERT INTO experience_options (label, normalized_label, created_by_user_id, created_at)
-        VALUES (${label}, ${label.toLowerCase()}, ${'11111111-1111-4111-8111-111111111111'}, ${now})
-      `;
-    }
+  for (const label of experienceOptions) {
+    await db`
+      INSERT INTO experience_options (label, normalized_label, created_by_user_id, created_at)
+      VALUES (${label}, ${label.toLowerCase()}, ${'11111111-1111-4111-8111-111111111111'}, ${now})
+    `;
+  }
 
-    await tx`
+  await db`
       INSERT INTO caregiver_profiles (
         id, user_id, name, contact_info, location, location_details,
         skills, experience_tags, experience, availability, qualifications, created_at
@@ -83,7 +82,7 @@ async function seedDummyData(): Promise<void> {
         ${'Alex Morgan'},
         ${'alex@example.com'},
         ${'Austin, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'austin', address_line: null, postal_code: '78701' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'austin', address_line: null, postal_code: '78701' })}::jsonb,
         ${['Medication management', 'Mobility assistance', 'Companionship']},
         ${['Medication Management', 'Mobility Assistance', 'Companionship']},
         ${'8 years in homecare and senior wellness support.'},
@@ -97,7 +96,7 @@ async function seedDummyData(): Promise<void> {
         ${'Blair Kim'},
         ${'blair@example.com'},
         ${'Dallas, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'dallas', address_line: null, postal_code: '75201' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'dallas', address_line: null, postal_code: '75201' })}::jsonb,
         ${['Childcare', 'Meal preparation', 'Companionship']},
         ${['Childcare', 'Meal Preparation', 'Companionship']},
         ${'Former pediatric care assistant with family support focus.'},
@@ -111,7 +110,7 @@ async function seedDummyData(): Promise<void> {
         ${'Casey Rivera'},
         ${'casey@example.com'},
         ${'Houston, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'houston', address_line: null, postal_code: '77002' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'houston', address_line: null, postal_code: '77002' })}::jsonb,
         ${['Dementia care', 'Elderly care', 'Medication management']},
         ${['Dementia Care', 'Elderly Care', 'Medication Management']},
         ${'Specialized memory-care support and medication routines.'},
@@ -125,7 +124,7 @@ async function seedDummyData(): Promise<void> {
         ${'Devon Patel'},
         ${'devon@example.com'},
         ${'San Antonio, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'san antonio', address_line: null, postal_code: '78205' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'san antonio', address_line: null, postal_code: '78205' })}::jsonb,
         ${['Post-surgery support', 'Mobility assistance']},
         ${['Post-surgery Support', 'Mobility Assistance']},
         ${'Post-op recovery caregiver with mobility rehabilitation background.'},
@@ -139,7 +138,7 @@ async function seedDummyData(): Promise<void> {
         ${'Elliot Chen'},
         ${'elliot@example.com'},
         ${'Austin, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'austin', address_line: null, postal_code: '78704' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'austin', address_line: null, postal_code: '78704' })}::jsonb,
         ${['Companionship', 'Meal preparation', 'Elderly care']},
         ${['Companionship', 'Meal Preparation', 'Elderly Care']},
         ${'Community caregiver focused on daily living support.'},
@@ -149,7 +148,7 @@ async function seedDummyData(): Promise<void> {
       )
     `;
 
-    await tx`
+  await db`
       INSERT INTO care_seeker_profiles (
         id, user_id, name, contact_info, location, created_at
       ) VALUES
@@ -158,7 +157,7 @@ async function seedDummyData(): Promise<void> {
       (${ 'b8888888-8888-4888-8888-888888888888' }, ${ '88888888-8888-4888-8888-888888888888' }, ${ 'Harper Blake' }, ${ 'harper@example.com' }, ${ 'Houston, TX' }, ${now})
     `;
 
-    await tx`
+  await db`
       INSERT INTO care_requests (
         id, care_seeker_id, care_type, service_location, service_location_details,
         schedule, duration, preferences, required_experiences, created_at
@@ -168,7 +167,7 @@ async function seedDummyData(): Promise<void> {
         ${'b6666666-6666-4666-8666-666666666666'},
         ${'In-home elderly support'},
         ${'Austin, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'austin', address_line: null, postal_code: '78702' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'austin', address_line: null, postal_code: '78702' })}::jsonb,
         ${JSON.stringify({ v: 1, timezone: 'local', slots: [{ day: 'mon', start: '09:00', end: '13:00' }, { day: 'fri', start: '10:00', end: '14:00' }] })},
         ${'12 weeks'},
         ${'Need medication reminders and mobility support'},
@@ -180,7 +179,7 @@ async function seedDummyData(): Promise<void> {
         ${'b7777777-7777-4777-8777-777777777777'},
         ${'After school childcare'},
         ${'Dallas, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'dallas', address_line: null, postal_code: '75202' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'dallas', address_line: null, postal_code: '75202' })}::jsonb,
         ${'Weekdays afternoons'},
         ${'Ongoing'},
         ${'Meal prep and companionship preferred'},
@@ -192,7 +191,7 @@ async function seedDummyData(): Promise<void> {
         ${'b8888888-8888-4888-8888-888888888888'},
         ${'Memory care assistance'},
         ${'Houston, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'houston', address_line: null, postal_code: '77003' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'houston', address_line: null, postal_code: '77003' })}::jsonb,
         ${'Tue Thu daytime'},
         ${'8 weeks'},
         ${'Dementia care experience required'},
@@ -204,7 +203,7 @@ async function seedDummyData(): Promise<void> {
         ${'b6666666-6666-4666-8666-666666666666'},
         ${'Companionship visits'},
         ${'Austin, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'austin', address_line: null, postal_code: '78758' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'austin', address_line: null, postal_code: '78758' })}::jsonb,
         ${'Weekend mornings'},
         ${'4 weeks'},
         ${'Friendly and social caregiver preferred'},
@@ -216,7 +215,7 @@ async function seedDummyData(): Promise<void> {
         ${'b7777777-7777-4777-8777-777777777777'},
         ${'Post-surgery home recovery'},
         ${'San Antonio, TX'},
-        ${{ country_code: 'US', state_or_province: 'TX', city: 'san antonio', address_line: null, postal_code: '78207' }},
+        ${JSON.stringify({ country_code: 'US', state_or_province: 'TX', city: 'san antonio', address_line: null, postal_code: '78207' })}::jsonb,
         ${'Evenings'},
         ${'6 weeks'},
         ${'Mobility and post-op support needed'},
@@ -225,7 +224,7 @@ async function seedDummyData(): Promise<void> {
       )
     `;
 
-    await tx`
+  await db`
       INSERT INTO matches (id, care_request_id, caregiver_id, matched_at) VALUES
       (${ 'd1111111-1111-4111-8111-111111111111' }, ${ 'c1010101-1010-4101-8101-101010101010' }, ${ 'a1111111-1111-4111-8111-111111111111' }, ${now}),
       (${ 'd2222222-2222-4222-8222-222222222222' }, ${ 'c1010101-1010-4101-8101-101010101010' }, ${ 'a5555555-5555-4555-8555-555555555555' }, ${now}),
@@ -235,7 +234,7 @@ async function seedDummyData(): Promise<void> {
       (${ 'd6666666-6666-4666-8666-666666666666' }, ${ 'c5050505-5050-4505-8505-505050505050' }, ${ 'a4444444-4444-4444-8444-444444444444' }, ${now})
     `;
 
-    await tx`
+  await db`
       INSERT INTO job_accept_requests (
         id, care_request_id, caregiver_id, status, created_at, responded_at
       ) VALUES
@@ -243,7 +242,6 @@ async function seedDummyData(): Promise<void> {
       (${ 'e2222222-2222-4222-8222-222222222222' }, ${ 'c2020202-2020-4202-8202-202020202020' }, ${ 'a2222222-2222-4222-8222-222222222222' }, ${'pending'}, ${now}, ${null}),
       (${ 'e3333333-3333-4333-8333-333333333333' }, ${ 'c3030303-3030-4303-8303-303030303030' }, ${ 'a3333333-3333-4333-8333-333333333333' }, ${'declined'}, ${now}, ${now})
     `;
-  });
 
   logger.info('Dummy seed completed successfully.');
 }
