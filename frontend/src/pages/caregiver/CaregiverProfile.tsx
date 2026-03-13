@@ -20,7 +20,7 @@ import {
   type LocationFields,
 } from '../../utils/location';
 import { CAREGIVER_PROFILE } from '../../utils/constants';
-import type { CaregiverProfile as CaregiverProfileType } from '../../types';
+import type { CaregiverProfile as CaregiverProfileType, MatchingStatus } from '../../types';
 import CaregiverPersonalInfoSection from './components/CaregiverPersonalInfoSection';
 import CaregiverSkillsExperienceSection from './components/CaregiverSkillsExperienceSection';
 import CaregiverAvailabilityQualificationsSection from './components/CaregiverAvailabilityQualificationsSection';
@@ -36,6 +36,23 @@ interface ProfileState {
   error: { status: number; message: string } | null;
 }
 
+const getMatchingStatusMessage = (
+  matchingStatus: MatchingStatus | undefined,
+  matchingError: string | null | undefined
+): string => {
+  if (matchingStatus === 'queued' || matchingStatus === 'running') {
+    return 'Profile updated successfully. Matching refresh is in progress.';
+  }
+
+  if (matchingStatus === 'failed') {
+    return matchingError
+      ? `Profile updated, but matching refresh failed: ${matchingError}`
+      : 'Profile updated, but matching refresh failed. Please try saving again.';
+  }
+
+  return 'Profile updated successfully! ✓';
+};
+
 const CaregiverProfile: React.FC = () => {
   const navigate = useNavigate();
   const [state, setState] = useState<ProfileState>({
@@ -49,6 +66,7 @@ const CaregiverProfile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState('Profile updated successfully! ✓');
   const [availabilityMode, setAvailabilityMode] = useState<'structured' | 'legacy'>(
     'structured'
   );
@@ -112,12 +130,17 @@ const CaregiverProfile: React.FC = () => {
 
   const handleEditClick = () => {
     if (state.profile) {
+      const parsedStructuredLocation = parseStructuredLocation(state.profile.location_details);
+      const parsedLocationString = parseLocationString(state.profile.location || '');
+
       setEditData(state.profile);
-      setLocationFields(
-        state.profile.location_details
-          ? parseStructuredLocation(state.profile.location_details)
-          : parseLocationString(state.profile.location || '')
-      );
+      setLocationFields({
+        countryCode: parsedStructuredLocation.countryCode || parsedLocationString.countryCode,
+        cityOrTown: parsedStructuredLocation.cityOrTown || parsedLocationString.cityOrTown,
+        stateOrRegion: parsedStructuredLocation.stateOrRegion || parsedLocationString.stateOrRegion,
+        addressLine: parsedStructuredLocation.addressLine || parsedLocationString.addressLine,
+        postalCode: parsedStructuredLocation.postalCode || parsedLocationString.postalCode,
+      });
       const parsedAvailability = parseAvailabilitySlots(state.profile.availability);
       if (parsedAvailability === null) {
         setAvailabilityMode('legacy');
@@ -313,6 +336,7 @@ const CaregiverProfile: React.FC = () => {
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
+    setSaveSuccessMessage('Profile updated successfully! ✓');
 
     try {
       const payload: Partial<CaregiverProfileType> = {
@@ -327,6 +351,9 @@ const CaregiverProfile: React.FC = () => {
 
       const updatedProfile = await apiPut<CaregiverProfileType>(CAREGIVER_PROFILE, payload);
       setState({ profile: updatedProfile, loading: false, error: null });
+      setSaveSuccessMessage(
+        getMatchingStatusMessage(updatedProfile.matching_status, updatedProfile.matching_error)
+      );
       setSaveSuccess(true);
       setEditMode(false);
 
@@ -389,9 +416,26 @@ const CaregiverProfile: React.FC = () => {
 
         {saveSuccess && (
           <div className="success-banner">
-            <p>Profile updated successfully! ✓</p>
+            <p>{saveSuccessMessage}</p>
           </div>
         )}
+
+        {!saveSuccess && state.profile?.matching_status === 'failed' && (
+          <div className="error-banner">
+            <p>
+              Matching refresh failed for your latest profile update.
+              {state.profile.matching_error ? ` ${state.profile.matching_error}` : ''}
+            </p>
+          </div>
+        )}
+
+        {!saveSuccess &&
+          (state.profile?.matching_status === 'queued' ||
+            state.profile?.matching_status === 'running') && (
+            <div className="success-banner">
+              <p>Matching refresh is in progress for your latest profile update.</p>
+            </div>
+          )}
 
         {saveError && (
           <div className="error-banner">

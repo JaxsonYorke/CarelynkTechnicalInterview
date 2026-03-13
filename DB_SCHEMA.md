@@ -25,6 +25,9 @@ This was the oriiginal schema, then it was amended to as the project went on.
 | experience       | TEXT         |                            | Relevant experience          |
 | availability     | TEXT         | NOT NULL                   | Availability description      |
 | qualifications   | TEXT         |                            | Certifications (optional)     |
+| matching_status  | TEXT         | NOT NULL, DEFAULT 'succeeded' | Latest caregiver rematch status (`queued`, `running`, `succeeded`, `failed`) |
+| matching_error   | TEXT         |                            | Last rematch failure message (if any) |
+| matching_updated_at | TIMESTAMP |                            | Timestamp for latest rematch status update |
 | created_at       | TIMESTAMP    | DEFAULT now()              | Profile creation time        |
 
 ## CareSeekerProfiles

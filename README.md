@@ -191,6 +191,7 @@ Schema details for related tables/columns: [DB_SCHEMA.md](DB_SCHEMA.md).
 ## Matching logic (brief)
 
 Matching executes when a care request is created or updated.
+When a caregiver profile is updated, a background rematch is queued and status is exposed on caregiver profile responses.
 
 A caregiver matches only when all are true:
 
@@ -203,8 +204,8 @@ Implementation: `backend/src/services/matchingService.ts`.
 ## Major assumptions
 
 - One account has exactly one role (`caregiver` or `care_seeker`).
-- Matching is rule-based and synchronous (no async job queue).
-- Matching happens when the request is submitted, not when the list of matches is requested. This would be a very easy change though, it would just take a lot more compute power.
+- Matching is rule-based; care-request matching is synchronous, while caregiver profile rematch is asynchronous with status visibility.
+- Matching happens when the request is submitted, and matches can also be recomputed when the list of matches is requested.
 - A care seeker can send an accept request to one caregiver per care request at a time.
 - Security is baseline for MVP (JWT auth, validation, helmet, role checks)
 

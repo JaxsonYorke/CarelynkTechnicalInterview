@@ -85,6 +85,24 @@ export const caregiverProfileRepository = {
     return firstRowOrNull(result);
   },
 
+  async updateMatchingStatusByProfileId(
+    profileId: string,
+    status: CaregiverProfile['matching_status'],
+    error: string | null
+  ): Promise<CaregiverProfile | null> {
+    const db = getDatabase();
+    const result = await db<CaregiverProfile[]>`
+      UPDATE caregiver_profiles
+      SET
+        matching_status = ${status},
+        matching_error = ${error},
+        matching_updated_at = NOW()
+      WHERE id = ${profileId}
+      RETURNING *
+    `;
+    return firstRowOrNull(result);
+  },
+
   async findByLocation(location: string): Promise<CaregiverProfile[]> {
     const db = getDatabase();
     return db<CaregiverProfile[]>`

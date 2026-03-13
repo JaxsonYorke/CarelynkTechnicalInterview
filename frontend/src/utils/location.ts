@@ -110,6 +110,28 @@ export const getRegionOptions = (countryCode: string): RegionOption[] => {
   return US_REGION_OPTIONS;
 };
 
+const normalizeRegionValue = (countryCode: string, region: string): string => {
+  const trimmedRegion = region.trim();
+  if (!trimmedRegion) {
+    return '';
+  }
+
+  const normalizedCountryCode = countryCode.trim().toUpperCase() || 'US';
+  const upperRegion = trimmedRegion.toUpperCase();
+  const options = getRegionOptions(normalizedCountryCode);
+  const matchedByValue = options.find((option) => option.value === upperRegion);
+  if (matchedByValue) {
+    return matchedByValue.value;
+  }
+
+  const matchedByLabel = options.find((option) => option.label.toUpperCase() === upperRegion);
+  if (matchedByLabel) {
+    return matchedByLabel.value;
+  }
+
+  return upperRegion;
+};
+
 export const emptyLocationFields = (): LocationFields => ({
   countryCode: 'US',
   cityOrTown: '',
@@ -131,11 +153,15 @@ export const parseLocationString = (location: string): LocationFields => {
   const remainderParts = remainder.split(/\s+/).filter(Boolean);
   if (remainderParts.length >= 2 && POSTAL_CODE_REGEX.test(remainderParts[remainderParts.length - 1])) {
     const postalCode = remainderParts[remainderParts.length - 1];
-    const stateOrRegion = remainderParts.slice(0, -1).join(' ').toUpperCase();
+    const stateOrRegion = normalizeRegionValue('US', remainderParts.slice(0, -1).join(' '));
     return { ...emptyLocationFields(), cityOrTown: rawCity, stateOrRegion, postalCode };
   }
 
-  return { ...emptyLocationFields(), cityOrTown: rawCity, stateOrRegion: remainder.toUpperCase() };
+  return {
+    ...emptyLocationFields(),
+    cityOrTown: rawCity,
+    stateOrRegion: normalizeRegionValue('US', remainder),
+  };
 };
 
 export const parseStructuredLocation = (location?: StructuredLocation | null): LocationFields => {
@@ -143,10 +169,11 @@ export const parseStructuredLocation = (location?: StructuredLocation | null): L
     return emptyLocationFields();
   }
 
+  const countryCode = location.country_code?.trim().toUpperCase() || 'US';
   return {
-    countryCode: location.country_code || 'US',
+    countryCode,
     cityOrTown: location.city || '',
-    stateOrRegion: location.state_or_province || '',
+    stateOrRegion: normalizeRegionValue(countryCode, location.state_or_province || ''),
     addressLine: location.address_line || '',
     postalCode: location.postal_code || '',
   };

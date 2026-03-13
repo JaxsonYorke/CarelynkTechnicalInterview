@@ -10,6 +10,8 @@ export interface StructuredLocation {
   postal_code?: string | null;
 }
 
+export type MatchingStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
 export interface User {
   id: string;
   email: string;
@@ -53,6 +55,9 @@ export interface CaregiverProfile {
   experience?: string;
   availability: string;
   qualifications?: string;
+  matching_status?: MatchingStatus;
+  matching_error?: string | null;
+  matching_updated_at?: string | null;
 }
 
 export interface ExperienceOptionResponse {

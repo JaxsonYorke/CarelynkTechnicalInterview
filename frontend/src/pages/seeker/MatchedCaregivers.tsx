@@ -5,7 +5,7 @@ import { apiGet, apiPost } from '../../services/api';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { formatAvailabilitySummary } from '../../utils/availability';
 import styles from './MatchedCaregivers.module.css';
-import type { Match, CaregiverProfile, JobAcceptRequest } from '../../types';
+import type { Match, CaregiverProfile, JobAcceptRequest, CareRequest } from '../../types';
 
 interface MatchResponse {
   job_id: string;
@@ -13,12 +13,15 @@ interface MatchResponse {
   accept_request: JobAcceptRequest | null;
 }
 
+type JobResponse = CareRequest;
+
 interface MatchesError {
   status: number;
   message: string;
 }
 
 interface MatchedCaregiversData {
+  job: CareRequest | null;
   matches: Match[];
   acceptRequest: JobAcceptRequest | null;
 }
@@ -29,13 +32,18 @@ const MatchedCaregivers: React.FC = () => {
 
   const fetchMatches = useCallback(async (): Promise<MatchedCaregiversData> => {
     if (!jobId) {
-      return { matches: [], acceptRequest: null };
+      return { job: null, matches: [], acceptRequest: null };
     }
 
-    const data = await apiGet<MatchResponse>(`/api/jobs/${jobId}/matches`);
+    const [matchesData, jobData] = await Promise.all([
+      apiGet<MatchResponse>(`/api/jobs/${jobId}/matches`),
+      apiGet<JobResponse>(`/api/jobs/${jobId}`),
+    ]);
+
     return {
-      matches: data.matches || [],
-      acceptRequest: data.accept_request || null,
+      job: jobData || null,
+      matches: matchesData.matches || [],
+      acceptRequest: matchesData.accept_request || null,
     };
   }, [jobId]);
 
@@ -47,12 +55,13 @@ const MatchedCaregivers: React.FC = () => {
     setError,
     reload,
   } = useDataLoading<MatchedCaregiversData, MatchesError>(fetchMatches, {
-    initialData: { matches: [], acceptRequest: null },
+    initialData: { job: null, matches: [], acceptRequest: null },
     enabled: Boolean(jobId),
     mapError: (fetchError) => toDataLoadingError(fetchError, 'Failed to load matches'),
   });
 
   const matches = matchedData.matches;
+  const job = matchedData.job;
   const acceptRequest = matchedData.acceptRequest;
   const missingJobError = !jobId ? { status: 400, message: 'Job ID is missing' } : null;
   const displayError = missingJobError || error;
@@ -157,6 +166,54 @@ const MatchedCaregivers: React.FC = () => {
             <div className={styles.success}>
               <p className={styles.successTitle}>✅ Request Sent</p>
               <p className={styles.successMessage}>{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {!loading && !displayError && job && (
+          <div className={styles.requestSummaryContainer}>
+            <div className={styles.requestSummaryCard}>
+              <div className={styles.cardBody}>
+                <p className={styles.requestSummaryTitle}>Request Summary</p>
+                <div className={styles.requestSummaryRow}>
+                  <span className={styles.requestSummaryLabel}>🩺 Care Type</span>
+                  <span className={styles.requestSummaryValue}>{job.care_type}</span>
+                </div>
+                <div className={styles.requestSummaryRow}>
+                  <span className={styles.requestSummaryLabel}>📍 Location</span>
+                  <span className={styles.requestSummaryValue}>{job.service_location}</span>
+                </div>
+                <div className={styles.requestSummaryRow}>
+                  <span className={styles.requestSummaryLabel}>⏰ Schedule</span>
+                  <span className={styles.requestSummaryValue}>{formatAvailabilitySummary(job.schedule)}</span>
+                </div>
+                <div className={styles.requestSummaryRow}>
+                  <span className={styles.requestSummaryLabel}>📅 Duration</span>
+                  <span className={styles.requestSummaryValue}>{job.duration}</span>
+                </div>
+                <div className={styles.requestSummaryRow}>
+                  <span className={styles.requestSummaryLabel}>💼 Required Experiences</span>
+                  <div className={styles.requiredExperiencesList}>
+                    {job.required_experiences && job.required_experiences.length > 0 ? (
+                      job.required_experiences.map((experience, index) => (
+                        <span key={`${experience}-${index}`} className={styles.requiredExperienceTag}>
+                          {experience}
+                        </span>
+                      ))
+                    ) : (
+                      <span className={styles.requestSummaryValue}>Not specified</span>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.requestSummaryRow}>
+                  <span className={styles.requestSummaryLabel}>✨ Preferences</span>
+                  <span className={styles.requestSummaryValue}>
+                    {job.preferences && job.preferences.trim().length > 0
+                      ? job.preferences
+                      : 'Not specified'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -11,6 +11,21 @@ import { matchingService } from '../../services/matchingService';
 
 const router = Router();
 
+const queueCaregiverRematch = async (caregiverProfileId: string) => {
+  const profileWithQueuedStatus = await caregiverProfileRepository.updateMatchingStatusByProfileId(
+    caregiverProfileId,
+    'queued',
+    null
+  );
+
+  if (!profileWithQueuedStatus) {
+    throw new NotFoundError('Caregiver profile', caregiverProfileId);
+  }
+
+  matchingService.triggerCaregiverRematchInBackground(caregiverProfileId);
+  return profileWithQueuedStatus;
+};
+
 // GET /api/caregiver/profile - Get caregiver profile
 router.get(
   '/caregiver/profile',
@@ -110,11 +125,11 @@ const upsertCaregiverProfile = asyncHandler(async (req: AuthRequest, res: Respon
         throw new NotFoundError('Caregiver profile');
       }
 
-      matchingService.triggerCaregiverRematchInBackground(updatedProfile.id);
+      const queuedProfile = await queueCaregiverRematch(updatedProfile.id);
 
       res.json({
         success: true,
-        data: updatedProfile,
+        data: queuedProfile,
       });
     } else {
       // Create new profile
@@ -131,11 +146,11 @@ const upsertCaregiverProfile = asyncHandler(async (req: AuthRequest, res: Respon
         normalizedLocation.details,
       );
 
-      matchingService.triggerCaregiverRematchInBackground(newProfile.id);
+      const queuedProfile = await queueCaregiverRematch(newProfile.id);
 
       res.status(201).json({
         success: true,
-        data: newProfile,
+        data: queuedProfile,
       });
     }
   });

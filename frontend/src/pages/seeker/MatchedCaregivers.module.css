@@ -240,6 +240,64 @@
 }
 
 /* Matches Container */
+.requestSummaryContainer {
+  max-width: 900px;
+  margin: 0 auto 24px auto;
+}
+
+.requestSummaryCard {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e7ebf3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.requestSummaryTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 20px 0;
+}
+
+.requestSummaryRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.requestSummaryRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.requestSummaryLabel {
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 170px;
+}
+
+.requestSummaryValue {
+  color: #7f8c8d;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.requiredExperiencesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.requiredExperienceTag {
+  display: inline-block;
+  background: #f0f4ff;
+  color: #667eea;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .matchesContainer {
   max-width: 900px;
   margin: 0 auto;
@@ -475,7 +533,17 @@
     min-width: auto;
   }
 
+  .requestSummaryLabel {
+    min-width: auto;
+  }
+
   .infoRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .requestSummaryRow {
     flex-direction: column;
     align-items: flex-start;
     gap: 5px;
@@ -517,6 +585,11 @@
 
   .cardBody {
     padding: 15px;
+  }
+
+  .requestSummaryTitle {
+    font-size: 17px;
+    margin-bottom: 16px;
   }
 
   .cardFooter {

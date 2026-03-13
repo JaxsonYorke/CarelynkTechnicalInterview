@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { apiGet } from '../../services/api';
 import type { CareSeekerProfile, CareRequest } from '../../types';
+import { formatAvailabilitySummary } from '../../utils/availability';
 
 interface DashboardError {
   status: number;
@@ -289,7 +290,7 @@ const SeekerDashboard: React.FC = () => {
                           {job.care_type}
                         </div>
                         <div style={{ fontSize: '12px', color: '#666' }}>
-                          {job.service_location} • {job.schedule}
+                          {job.service_location} • {formatAvailabilitySummary(job.schedule)}
                         </div>
                       </div>
                       <button

@@ -1,4 +1,5 @@
 export type UserRole = 'caregiver' | 'care_seeker';
+export type MatchingStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 
 export interface StructuredLocation {
   country_code: string;
@@ -28,6 +29,9 @@ export interface CaregiverProfile {
   experience: string | null;
   availability: string;
   qualifications: string | null;
+  matching_status: MatchingStatus;
+  matching_error: string | null;
+  matching_updated_at: Date | null;
   created_at: Date;
 }
 

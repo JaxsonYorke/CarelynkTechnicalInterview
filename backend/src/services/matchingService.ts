@@ -216,6 +216,9 @@ function hasExperienceMatch(requiredExperiences: string[], caregiver: CaregiverP
 }
 
 function caregiverMatchesRequest(careRequest: CareRequest, caregiver: CaregiverProfile): boolean {
+  console.log(availabilityMatches(careRequest.schedule, caregiver.availability))
+  console.log(locationsMatch(careRequest, caregiver))
+  console.log(hasExperienceMatch(careRequest.required_experiences, caregiver))
   return (
     availabilityMatches(careRequest.schedule, caregiver.availability) &&
     locationsMatch(careRequest, caregiver) &&
@@ -285,12 +288,49 @@ export const matchingService = {
 
   triggerCaregiverRematchInBackground(caregiverId: string): void {
     setImmediate(() => {
-      void this.refreshMatchesForCaregiver(caregiverId).catch((error: unknown) => {
-        logger.error('Background caregiver rematch failed', {
+      const updateStatus = async (
+        status: CaregiverProfile['matching_status'],
+        error: string | null
+      ): Promise<void> => {
+        const updatedProfile = await caregiverProfileRepository.updateMatchingStatusByProfileId(
           caregiverId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      });
+          status,
+          error
+        );
+        if (!updatedProfile) {
+          logger.warn('Unable to update caregiver matching status because profile was not found', {
+            caregiverId,
+            status,
+          });
+        }
+      };
+
+      void (async () => {
+        try {
+          await updateStatus('running', null);
+          await this.refreshMatchesForCaregiver(caregiverId);
+          await updateStatus('succeeded', null);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+
+          try {
+            await updateStatus('failed', errorMessage);
+          } catch (statusUpdateError: unknown) {
+            logger.error('Failed to persist caregiver rematch failure status', {
+              caregiverId,
+              error:
+                statusUpdateError instanceof Error
+                  ? statusUpdateError.message
+                  : String(statusUpdateError),
+            });
+          }
+
+          logger.error('Background caregiver rematch failed', {
+            caregiverId,
+            error: errorMessage,
+          });
+        }
+      })();
     });
   },
 
