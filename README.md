@@ -243,6 +243,10 @@ Implementation: `backend/src/services/matchingService.ts`.
 - A care seeker can send an accept request to one caregiver per care request at a time.
 - Security is baseline for MVP (JWT auth, validation, helmet, role checks), not production-hardening.
 
+## Minor Assumptions
+- Each Username is unique
+
+
 ## Sample demo flow
 
 1. Create caregiver account and complete onboarding.
@@ -250,4 +254,7 @@ Implementation: `backend/src/services/matchingService.ts`.
 3. Create a care request with schedule/location/required experiences.
 4. Open matches and send an accept request.
 5. Log back in as caregiver and review incoming/accepted jobs.
+
+
+
 

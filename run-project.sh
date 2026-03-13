@@ -20,12 +20,40 @@ ensure_command() {
   fi
 }
 
+has_command() {
+  command -v "$1" >/dev/null 2>&1
+}
+
 ensure_docker_daemon() {
   if ! docker info >/dev/null 2>&1; then
     echo "ERROR: Docker daemon is not running."
     echo "Start Docker Desktop / Docker Engine, then rerun this script."
     exit 1
   fi
+}
+
+print_no_docker_startup() {
+  step "Docker not available, Either Install Docker (See README) or fallback to 3-terminal startup"
+  cat <<'EOF'
+Run the project manually in 3 terminals:
+
+Terminal 1 (Database - local PostgreSQL must be installed/running):
+  Ensure your local Postgres is running and a database named "carelynk" exists.
+  Connection expected by backend/.env:
+    postgresql://postgres:postgres@localhost:5432/carelynk
+
+Terminal 2 (Backend API):
+  cd backend
+  npm run dev
+
+Terminal 3 (Frontend):
+  cd frontend
+  npm start
+
+URLs:
+  Frontend: http://localhost:3000
+  Backend:  http://localhost:3001
+EOF
 }
 
 ensure_env_file() {
@@ -115,17 +143,8 @@ import_dump_if_present() {
 echo "Carelynk project bootstrap (Bash)"
 
 step "Checking prerequisites"
-ensure_command "docker" "Install Docker Desktop: https://www.docker.com/products/docker-desktop/"
 ensure_command "node" "Install Node.js 18+: https://nodejs.org/"
 ensure_command "npm" "npm ships with Node.js. Reinstall Node.js if missing."
-
-if ! docker compose version >/dev/null 2>&1; then
-  echo "ERROR: 'docker compose' plugin is not available."
-  echo "Use Docker Desktop / Docker Engine with Compose v2."
-  exit 1
-fi
-
-ensure_docker_daemon
 
 step "Creating missing environment files"
 ensure_env_file "backend/.env" "NODE_ENV=development
@@ -149,19 +168,23 @@ step "Installing dependencies"
   npm install
 )
 
-step "Starting Docker Compose stack"
-docker compose down --remove-orphans
-docker compose up -d --build --force-recreate
+if has_command "docker" && docker compose version >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  step "Starting Docker Compose stack"
+  docker compose down --remove-orphans
+  docker compose up -d --build --force-recreate
 
-import_dump_if_present
+  import_dump_if_present
 
-step "Current container status"
-docker compose ps
+  step "Current container status"
+  docker compose ps
 
-echo
-echo "Done."
-echo "Frontend: http://localhost:3000"
-echo "Backend:  http://localhost:3001"
-echo "DB:       localhost:5432"
-echo
-echo "Use 'docker compose logs -f backend' to watch backend logs."
+  echo
+  echo "Done."
+  echo "Frontend: http://localhost:3000"
+  echo "Backend:  http://localhost:3001"
+  echo "DB:       localhost:5432"
+  echo
+  echo "Use 'docker compose logs -f backend' to watch backend logs."
+else
+  print_no_docker_startup
+fi
