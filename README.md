@@ -24,56 +24,116 @@ Full-stack take-home project implementing a two-portal homecare onboarding and m
 - `DB_SCHEMA.md` database schema reference
 - `COPILOT.md` assignment requirements
 
-## Prerequisites
+## Setup requirements
 
+Recommended workflow is Docker-based bootstrap from repo root.
+
+Required tools:
+
+- Docker Desktop (or Docker Engine + Compose v2)
 - Node.js 18+
 - npm 9+
-- PostgreSQL 14+ (or compatible)
 
-## Environment setup
+You do **not** need a separate local PostgreSQL install when using the provided scripts/Compose setup.
 
-### Backend
+## One-command project bootstrap (recommended)
 
-1. Copy `backend/.env.example` to `backend/.env`.
-2. Update values:
-   - `DATABASE_URL` (PostgreSQL connection string)
-   - `JWT_SECRET` (minimum 32 chars)
-   - optional: `PORT`, `JWT_EXPIRE`, `LOG_LEVEL`
+Use the root scripts to prepare and run everything:
 
-### Frontend
+- checks required tools (`docker`, `docker compose`, `node`, `npm`)
+- checks Docker daemon availability
+- creates missing env files (`backend/.env`, `frontend/.env`) without overwriting existing files
+- installs backend/frontend dependencies
+- recreates and starts the full Docker stack
+- optionally imports dummy data from a dump file
 
-Create `frontend/.env`:
+### Windows (PowerShell)
 
-```env
-REACT_APP_API_BASE_URL=http://localhost:3000
+```powershell
+.\run-project.ps1
 ```
 
-## Run locally
+With explicit dump:
 
-### Install dependencies
+```powershell
+.\run-project.ps1 -DumpFile .\seed\dummy.dump
+```
+
+Force dump re-import:
+
+```powershell
+$env:FORCE_DUMP_IMPORT="1"; .\run-project.ps1
+```
+
+### Linux/macOS (Bash)
 
 ```bash
-cd backend && npm install
-cd ../frontend && npm install
+chmod +x ./run-project.sh
+./run-project.sh
 ```
 
-### Start backend
+With explicit dump:
 
 ```bash
-cd backend
-npm run dev
+./run-project.sh ./seed/dummy.dump
 ```
 
-Backend runs migrations automatically on startup.
-
-### Start frontend
+Force dump re-import:
 
 ```bash
-cd frontend
-npm start
+FORCE_DUMP_IMPORT=1 ./run-project.sh
 ```
 
-## Build & test
+### Dump auto-discovery behavior
+
+If no explicit dump path is provided, scripts look for first match in:
+
+- `./*.dump` then `./*.sql`
+- `./seed/*.dump` then `./seed/*.sql`
+- `./data/*.dump` then `./data/*.sql`
+- `./db/*.dump` then `./db/*.sql`
+
+Format handling:
+
+- custom Postgres dump (`PGDMP`) -> `pg_restore`
+- plain SQL dump -> `psql`
+
+Safety behavior:
+
+- import is skipped by default if `public.users` already contains rows
+- use `FORCE_DUMP_IMPORT=1` to override
+
+## Runtime endpoints
+
+After bootstrap/compose startup:
+
+- frontend: `http://localhost:3000`
+- backend: `http://localhost:3001`
+- postgres: `localhost:5432`
+
+## Manual Docker Compose commands (fallback)
+
+From repo root:
+
+```bash
+docker compose up -d --build --force-recreate
+```
+
+Stop:
+
+```bash
+docker compose down
+```
+
+Reset DB volume:
+
+```bash
+docker compose down -v
+```
+
+Important: use repo-root Compose commands (or root scripts), not Docker Desktop "Run" on individual images, so service DNS/networking works correctly.
+
+## Build & test (optional local verification)
 
 ### Backend
 
@@ -91,6 +151,8 @@ cd frontend
 npm run build
 npm test -- --watch=false
 ```
+
+Note: frontend build currently depends on `scripts/build-with-webpack-fix.cjs`. If that file is missing in your checkout, `npm run build` will fail until restored.
 
 ## Core API highlights
 
@@ -136,99 +198,3 @@ Implementation: `backend/src/services/matchingService.ts`.
 4. Open matches and send an accept request.
 5. Log back in as caregiver and review incoming/accepted jobs.
 
-## Run full stack with Docker Compose
-
-This repository now includes a root `docker-compose.yml` that starts:
-
-- `frontend` (React app) on `http://localhost:3000`
-- `backend` (Node/TypeScript API) on `http://localhost:3001`
-- `postgres` (PostgreSQL) on `localhost:5432`
-
-## One-command project bootstrap
-
-From the repository root, you can run one script to:
-
-- validate required tools (`docker`, `docker compose`, `node`, `npm`)
-- verify Docker daemon is running
-- create missing `backend/.env` and `frontend/.env` files (without overwriting existing ones)
-- install dependencies for backend and frontend
-- build and start the full Docker Compose stack
-- optionally import dummy data from a dump file into PostgreSQL
-
-### Windows (PowerShell)
-
-```powershell
-.\run-project.ps1
-```
-
-### Linux/macOS (Bash)
-
-```bash
-chmod +x ./run-project.sh
-./run-project.sh
-```
-
-You can also pass a specific dump file:
-
-```bash
-./run-project.sh ./seed/dummy.dump
-```
-
-### Optional dump import
-
-The scripts will look for a dump in this order (first match wins):
-
-- `./*.dump` then `./*.sql`
-- `./seed/*.dump` then `./seed/*.sql`
-- `./data/*.dump` then `./data/*.sql`
-- `./db/*.dump` then `./db/*.sql`
-
-Format handling:
-
-- Custom Postgres dump (magic header `PGDMP`) -> imported with `pg_restore`
-- Plain SQL dump (`.sql` or text dump) -> imported with `psql`
-
-Safety behavior:
-
-- If `public.users` already has rows, import is skipped by default.
-- To force re-import:
-  - PowerShell: `$env:FORCE_DUMP_IMPORT="1"; .\run-project.ps1`
-  - Bash: `FORCE_DUMP_IMPORT=1 ./run-project.sh`
-
-PowerShell with explicit dump file:
-
-```powershell
-.\run-project.ps1 -DumpFile .\seed\dummy.dump
-```
-
-### Prerequisites
-
-- Docker Desktop (or Docker Engine + Compose plugin)
-
-### Start everything
-
-From the repository root:
-
-```bash
-docker compose up --build
-```
-
-Important: start services with this root Compose command (not Docker Desktop "Run" on individual images), so backend can resolve the Postgres service hostname over the Compose network.
-
-### Run in background
-
-```bash
-docker compose up -d --build
-```
-
-### Stop everything
-
-```bash
-docker compose down
-```
-
-To also remove the database volume:
-
-```bash
-docker compose down -v
-```
