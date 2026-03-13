@@ -90,24 +90,7 @@ Force dump re-import:
 FORCE_DUMP_IMPORT=1 ./run-project.sh
 ```
 
-### Dump auto-discovery behavior
 
-If no explicit dump path is provided, scripts look for first match in:
-
-- `./*.dump` then `./*.sql`
-- `./seed/*.dump` then `./seed/*.sql`
-- `./data/*.dump` then `./data/*.sql`
-- `./db/*.dump` then `./db/*.sql`
-
-Format handling:
-
-- custom Postgres dump (`PGDMP`) -> `pg_restore`
-- plain SQL dump -> `psql`
-
-Safety behavior:
-
-- import is skipped by default if `public.users` already contains rows
-- use `FORCE_DUMP_IMPORT=1` to override
 
 ## Runtime endpoints
 
@@ -160,31 +143,15 @@ All care seeker demo users use password: `Seeker123!`
 - `seeker.gabriel@demo.carelynk`
 - `seeker.harper@demo.carelynk`
 
-For container/network notes and common Docker issues, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
 
-## Manual Docker Compose commands (fallback)
-
-From repo root:
-
-```bash
-docker compose up -d --build --force-recreate
-```
-
-Stop:
-
-```bash
-docker compose down
-```
-
-Reset DB volume:
-
-```bash
-docker compose down -v
-```
-
-Important: use repo-root Compose commands (or root scripts), not Docker Desktop "Run" on individual images, so service DNS/networking works correctly.
 
 ## Build & test (optional local verification)
+
+### Start database (required for backend verification)
+
+```bash
+docker compose up -d postgres
+```
 
 ### Backend
 
@@ -192,8 +159,6 @@ Important: use repo-root Compose commands (or root scripts), not Docker Desktop 
 cd backend
 npm run build
 ```
-
-Note: `npm run lint` currently fails because the repo uses ESLint v9 with legacy `.eslintrc` format and no `eslint.config.js`.
 
 ### Frontend
 
@@ -203,7 +168,6 @@ npm run build
 npm test -- --watch=false
 ```
 
-Note: frontend build currently depends on `scripts/build-with-webpack-fix.cjs`. If that file is missing in your checkout, `npm run build` will fail until restored.
 
 ## Core API highlights
 
@@ -231,8 +195,8 @@ Matching executes when a care request is created or updated.
 A caregiver matches only when all are true:
 
 - **Location match:** request `service_location_details` and caregiver location data match by normalized region fields
-- **Availability match:** structured slots overlap, or fallback text tokens overlap meaningfully
-- **Experience match:** each required experience is found in caregiver skills, experience tags, or experience text
+- **Availability match:** Care Request time-day slots fall withing Care Giver's Availability times and days.
+- **Experience match:** each required experience is found in caregiver skills or experience tags.
 
 Implementation: `backend/src/services/matchingService.ts`.
 
