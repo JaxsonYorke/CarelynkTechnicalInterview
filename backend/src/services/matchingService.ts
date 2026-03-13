@@ -216,9 +216,9 @@ function hasExperienceMatch(requiredExperiences: string[], caregiver: CaregiverP
 }
 
 function caregiverMatchesRequest(careRequest: CareRequest, caregiver: CaregiverProfile): boolean {
-  console.log(availabilityMatches(careRequest.schedule, caregiver.availability))
-  console.log(locationsMatch(careRequest, caregiver))
-  console.log(hasExperienceMatch(careRequest.required_experiences, caregiver))
+  console.log("Availability match: " + caregiver.name + availabilityMatches(careRequest.schedule, caregiver.availability));
+  console.log("Locations match: " + caregiver.name + locationsMatch(careRequest, caregiver));
+  console.log("Experience match: " + caregiver.name + hasExperienceMatch(careRequest.required_experiences, caregiver));
   return (
     availabilityMatches(careRequest.schedule, caregiver.availability) &&
     locationsMatch(careRequest, caregiver) &&
