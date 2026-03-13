@@ -124,6 +124,12 @@ router.post(
       throw new NotFoundError('Pending job accept request', requestId);
     }
 
+    await matchRepository.deleteByRequestIdExceptCaregiverId(
+      updatedRequest.care_request_id,
+      caregiverProfile.id
+    );
+    await matchRepository.create(updatedRequest.care_request_id, caregiverProfile.id);
+
     res.json({
       success: true,
       data: updatedRequest,

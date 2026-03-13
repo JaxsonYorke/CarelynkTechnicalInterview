@@ -204,8 +204,9 @@ Implementation: `backend/src/services/matchingService.ts`.
 
 - One account has exactly one role (`caregiver` or `care_seeker`).
 - Matching is rule-based and synchronous (no async job queue).
+- Matching happens when the request is submitted, not when the list of matches is requested. This would be a very easy change though, it would just take a lot more compute power.
 - A care seeker can send an accept request to one caregiver per care request at a time.
-- Security is baseline for MVP (JWT auth, validation, helmet, role checks), not production-hardening.
+- Security is baseline for MVP (JWT auth, validation, helmet, role checks)
 
 ## Minor Assumptions
 - Each Username is unique

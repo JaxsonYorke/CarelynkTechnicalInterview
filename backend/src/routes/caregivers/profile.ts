@@ -7,6 +7,7 @@ import { NotFoundError, ValidationError } from '../../utils/errors';
 import { AuthRequest } from '../../middleware/errorHandler';
 import type { Response } from 'express';
 import { buildLocationPayload } from '../../utils/location';
+import { matchingService } from '../../services/matchingService';
 
 const router = Router();
 
@@ -109,6 +110,8 @@ const upsertCaregiverProfile = asyncHandler(async (req: AuthRequest, res: Respon
         throw new NotFoundError('Caregiver profile');
       }
 
+      matchingService.triggerCaregiverRematchInBackground(updatedProfile.id);
+
       res.json({
         success: true,
         data: updatedProfile,
@@ -127,6 +130,8 @@ const upsertCaregiverProfile = asyncHandler(async (req: AuthRequest, res: Respon
         canonicalExperienceTags ?? [],
         normalizedLocation.details,
       );
+
+      matchingService.triggerCaregiverRematchInBackground(newProfile.id);
 
       res.status(201).json({
         success: true,

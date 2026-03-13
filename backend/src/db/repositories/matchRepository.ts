@@ -65,4 +65,30 @@ export const matchRepository = {
     `;
     return result.count;
   },
+
+  async deleteByRequestIdAndCaregiverId(
+    careRequestId: string,
+    caregiverId: string
+  ): Promise<number> {
+    const db = getDatabase();
+    const result = await db`
+      DELETE FROM matches
+      WHERE care_request_id = ${careRequestId}
+        AND caregiver_id = ${caregiverId}
+    `;
+    return result.count;
+  },
+
+  async deleteByRequestIdExceptCaregiverId(
+    careRequestId: string,
+    caregiverId: string
+  ): Promise<number> {
+    const db = getDatabase();
+    const result = await db`
+      DELETE FROM matches
+      WHERE care_request_id = ${careRequestId}
+        AND caregiver_id <> ${caregiverId}
+    `;
+    return result.count;
+  },
 };

@@ -6,6 +6,7 @@ import { careSeekerProfileRepository } from '../../db/repositories/careSeekerPro
 import { caregiverProfileRepository } from '../../db/repositories/caregiverProfileRepository';
 import { matchRepository } from '../../db/repositories/matchRepository';
 import { jobAcceptRequestRepository } from '../../db/repositories/jobAcceptRequestRepository';
+import { matchingService } from '../../services/matchingService';
 import { NotFoundError } from '../../utils/errors';
 import { AuthRequest } from '../../middleware/errorHandler';
 import type { Response } from 'express';
@@ -31,6 +32,8 @@ router.get(
     if (!careSeekerProfile || careRequest.care_seeker_id !== careSeekerProfile.id) {
       throw new NotFoundError('Care request', jobId);
     }
+
+    await matchingService.recomputeCareRequestMatches(jobId);
 
     // Get matches with caregiver details
     const matches = await matchRepository.findByRequestId(jobId);

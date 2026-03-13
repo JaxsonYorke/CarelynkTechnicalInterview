@@ -1,6 +1,8 @@
 import { careRequestRepository } from '../db/repositories/careRequestRepository';
 import { caregiverProfileRepository } from '../db/repositories/caregiverProfileRepository';
+import { jobAcceptRequestRepository } from '../db/repositories/jobAcceptRequestRepository';
 import { matchRepository } from '../db/repositories/matchRepository';
+import logger from '../config/logger';
 import { CareRequest, CaregiverProfile, StructuredLocation } from '../types';
 import { locationsMatchByRegion, normalizeStructuredLocation, parseLegacyLocation } from '../utils/location';
 
@@ -232,6 +234,64 @@ export const matchingService = {
     await matchRepository.createMany(careRequest.id, matchedCaregiverIds);
 
     return matchedCaregiverIds;
+  },
+
+  async recomputeCareRequestMatches(careRequestId: string): Promise<string[]> {
+    const acceptRequest = await jobAcceptRequestRepository.findByCareRequestId(careRequestId);
+    if (acceptRequest?.status === 'accepted') {
+      await matchRepository.deleteByRequestIdExceptCaregiverId(careRequestId, acceptRequest.caregiver_id);
+      await matchRepository.create(careRequestId, acceptRequest.caregiver_id);
+      return [acceptRequest.caregiver_id];
+    }
+
+    const careRequest = await careRequestRepository.findById(careRequestId);
+    if (!careRequest) {
+      return [];
+    }
+
+    await matchRepository.deleteByRequestId(careRequest.id);
+    return this.matchCareRequest(careRequest);
+  },
+
+  async refreshMatchesForCaregiver(caregiverId: string): Promise<void> {
+    const [caregiver, careRequests] = await Promise.all([
+      caregiverProfileRepository.findById(caregiverId),
+      careRequestRepository.findAll(),
+    ]);
+
+    for (const careRequest of careRequests) {
+      const acceptRequest = await jobAcceptRequestRepository.findByCareRequestId(careRequest.id);
+      if (acceptRequest?.status === 'accepted') {
+        await matchRepository.deleteByRequestIdExceptCaregiverId(
+          careRequest.id,
+          acceptRequest.caregiver_id
+        );
+        await matchRepository.create(careRequest.id, acceptRequest.caregiver_id);
+        continue;
+      }
+
+      if (!caregiver) {
+        await matchRepository.deleteByRequestIdAndCaregiverId(careRequest.id, caregiverId);
+        continue;
+      }
+
+      if (caregiverMatchesRequest(careRequest, caregiver)) {
+        await matchRepository.create(careRequest.id, caregiver.id);
+      } else {
+        await matchRepository.deleteByRequestIdAndCaregiverId(careRequest.id, caregiver.id);
+      }
+    }
+  },
+
+  triggerCaregiverRematchInBackground(caregiverId: string): void {
+    setImmediate(() => {
+      void this.refreshMatchesForCaregiver(caregiverId).catch((error: unknown) => {
+        logger.error('Background caregiver rematch failed', {
+          caregiverId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    });
   },
 
   async matchCareRequestById(careRequestId: string): Promise<string[]> {
