@@ -99,4 +99,20 @@ export const caregiverProfileRepository = {
       ORDER BY created_at ASC
     `;
   },
+
+  async findAllByNameOrSkillsQuery(query: string): Promise<CaregiverProfile[]> {
+    const db = getDatabase();
+    const searchTerm = `%${query}%`;
+    return db<CaregiverProfile[]>`
+      SELECT *
+      FROM caregiver_profiles
+      WHERE name ILIKE ${searchTerm}
+        OR EXISTS (
+          SELECT 1
+          FROM unnest(skills) AS skill
+          WHERE skill ILIKE ${searchTerm}
+        )
+      ORDER BY created_at ASC
+    `;
+  },
 };

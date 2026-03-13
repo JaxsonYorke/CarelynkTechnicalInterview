@@ -2,6 +2,11 @@
 
 Full-stack take-home project implementing a two-portal homecare onboarding and matching platform.
 
+## Quick links
+
+- [Docker setup guide](DOCKER_SETUP.md)
+- [Database schema reference](DB_SCHEMA.md)
+
 ## Tech stack
 
 - Backend: Node.js + TypeScript + Express
@@ -21,12 +26,13 @@ Full-stack take-home project implementing a two-portal homecare onboarding and m
 
 - `backend/` Express API, migrations, repositories, matching service
 - `frontend/` React app with role-specific portal UX
-- `DB_SCHEMA.md` database schema reference
+- [`DOCKER_SETUP.md`](DOCKER_SETUP.md) Docker setup and troubleshooting
+- [`DB_SCHEMA.md`](DB_SCHEMA.md) database schema reference
 - `COPILOT.md` assignment requirements
 
 ## Setup requirements
 
-Recommended workflow is Docker-based bootstrap from repo root.
+Recommended workflow is Docker-based bootstrap from repo root (see [Docker setup guide](DOCKER_SETUP.md)).
 
 Required tools:
 
@@ -111,6 +117,8 @@ After bootstrap/compose startup:
 - backend: `http://localhost:3001`
 - postgres: `localhost:5432`
 
+For container/network notes and common Docker issues, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
+
 ## Manual Docker Compose commands (fallback)
 
 From repo root:
@@ -155,6 +163,8 @@ npm test -- --watch=false
 Note: frontend build currently depends on `scripts/build-with-webpack-fix.cjs`. If that file is missing in your checkout, `npm run build` will fail until restored.
 
 ## Core API highlights
+
+Schema details for related tables/columns: [DB_SCHEMA.md](DB_SCHEMA.md).
 
 - Auth:
   - `POST /api/auth/caregiver/signup`
