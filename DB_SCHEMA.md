@@ -69,8 +69,3 @@ This was the oriiginal schema, then it was amended to as the project went on.
 | created_at         | TIMESTAMP | DEFAULT now()                             | Option creation time                     |
 
 ---
-
-- All UUIDs can be generated with gen_random_uuid() or similar.
-- Use TEXT[] for skills if using Postgres, or a join table for more normalization.
-- Passwords should be securely hashed.
-- Add indexes to email, user_id, and foreign keys for performance.
