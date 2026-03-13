@@ -22,7 +22,14 @@ const queueCaregiverRematch = async (caregiverProfileId: string) => {
     throw new NotFoundError('Caregiver profile', caregiverProfileId);
   }
 
-  matchingService.triggerCaregiverRematchInBackground(caregiverProfileId);
+  if (!profileWithQueuedStatus.matching_updated_at) {
+    throw new Error('Failed to queue caregiver rematch because matching_updated_at was not set');
+  }
+
+  matchingService.triggerCaregiverRematchInBackground(
+    caregiverProfileId,
+    profileWithQueuedStatus.matching_updated_at
+  );
   return profileWithQueuedStatus;
 };
 

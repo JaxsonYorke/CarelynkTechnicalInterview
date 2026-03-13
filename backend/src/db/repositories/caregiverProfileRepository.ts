@@ -2,6 +2,12 @@ import { getDatabase } from '../../db/connection';
 import { CaregiverProfile, StructuredLocation } from '../../types';
 import { firstRowOrNull } from './helpers';
 
+type MatchingStatusUpdateOptions = {
+  expectedCurrentStatus?: CaregiverProfile['matching_status'];
+  expectedMatchingUpdatedAt?: Date;
+  updatedAt?: Date;
+};
+
 export const caregiverProfileRepository = {
   async create(
     userId: string,
@@ -88,16 +94,27 @@ export const caregiverProfileRepository = {
   async updateMatchingStatusByProfileId(
     profileId: string,
     status: CaregiverProfile['matching_status'],
-    error: string | null
+    error: string | null,
+    options?: MatchingStatusUpdateOptions
   ): Promise<CaregiverProfile | null> {
     const db = getDatabase();
+    const nextUpdatedAt = options?.updatedAt ?? new Date();
+    const expectedStatusClause = options?.expectedCurrentStatus
+      ? db`AND matching_status = ${options.expectedCurrentStatus}`
+      : db``;
+    const expectedUpdatedAtClause = options?.expectedMatchingUpdatedAt
+      ? db`AND matching_updated_at = ${options.expectedMatchingUpdatedAt}`
+      : db``;
+
     const result = await db<CaregiverProfile[]>`
       UPDATE caregiver_profiles
       SET
         matching_status = ${status},
         matching_error = ${error},
-        matching_updated_at = NOW()
+        matching_updated_at = ${nextUpdatedAt}
       WHERE id = ${profileId}
+      ${expectedStatusClause}
+      ${expectedUpdatedAtClause}
       RETURNING *
     `;
     return firstRowOrNull(result);

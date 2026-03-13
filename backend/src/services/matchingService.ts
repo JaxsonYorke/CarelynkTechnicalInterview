@@ -216,14 +216,11 @@ function hasExperienceMatch(requiredExperiences: string[], caregiver: CaregiverP
 }
 
 function caregiverMatchesRequest(careRequest: CareRequest, caregiver: CaregiverProfile): boolean {
-  console.log("Availability match: " + caregiver.name + availabilityMatches(careRequest.schedule, caregiver.availability));
-  console.log("Locations match: " + caregiver.name + locationsMatch(careRequest, caregiver));
-  console.log("Experience match: " + caregiver.name + hasExperienceMatch(careRequest.required_experiences, caregiver));
-  return (
-    availabilityMatches(careRequest.schedule, caregiver.availability) &&
-    locationsMatch(careRequest, caregiver) &&
-    hasExperienceMatch(careRequest.required_experiences, caregiver)
-  );
+  const matchesAvailability = availabilityMatches(careRequest.schedule, caregiver.availability);
+  const matchesLocation = locationsMatch(careRequest, caregiver);
+  const matchesExperience = hasExperienceMatch(careRequest.required_experiences, caregiver);
+
+  return matchesAvailability && matchesLocation && matchesExperience;
 }
 
 export const matchingService = {
@@ -286,47 +283,83 @@ export const matchingService = {
     }
   },
 
-  triggerCaregiverRematchInBackground(caregiverId: string): void {
+  triggerCaregiverRematchInBackground(caregiverId: string, queuedStatusUpdatedAt: Date): void {
     setImmediate(() => {
-      const updateStatus = async (
-        status: CaregiverProfile['matching_status'],
-        error: string | null
-      ): Promise<void> => {
-        const updatedProfile = await caregiverProfileRepository.updateMatchingStatusByProfileId(
-          caregiverId,
-          status,
-          error
-        );
-        if (!updatedProfile) {
-          logger.warn('Unable to update caregiver matching status because profile was not found', {
-            caregiverId,
-            status,
-          });
-        }
-      };
-
       void (async () => {
+        let runningStatusUpdatedAt: Date | null = null;
+
         try {
-          await updateStatus('running', null);
+          const runningProfile = await caregiverProfileRepository.updateMatchingStatusByProfileId(
+            caregiverId,
+            'running',
+            null,
+            {
+              expectedCurrentStatus: 'queued',
+              expectedMatchingUpdatedAt: queuedStatusUpdatedAt,
+            }
+          );
+          if (!runningProfile) {
+            logger.info('Skipping stale caregiver rematch job', {
+              caregiverId,
+              queuedStatusUpdatedAt: String(queuedStatusUpdatedAt),
+            });
+            return;
+          }
+
+          runningStatusUpdatedAt = runningProfile.matching_updated_at;
+          if (!runningStatusUpdatedAt) {
+            throw new Error('Caregiver rematch running status did not set matching_updated_at');
+          }
+
           await this.refreshMatchesForCaregiver(caregiverId);
-          await updateStatus('succeeded', null);
+
+          const succeededProfile = await caregiverProfileRepository.updateMatchingStatusByProfileId(
+            caregiverId,
+            'succeeded',
+            null,
+            {
+              expectedCurrentStatus: 'running',
+              expectedMatchingUpdatedAt: runningStatusUpdatedAt,
+            }
+          );
+          if (!succeededProfile) {
+            logger.info('Skipped stale caregiver rematch success status update', {
+              caregiverId,
+            });
+          }
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : String(error);
 
-          try {
-            await updateStatus('failed', errorMessage);
-          } catch (statusUpdateError: unknown) {
-            logger.error('Failed to persist caregiver rematch failure status', {
-              caregiverId,
-              error:
-                statusUpdateError instanceof Error
-                  ? statusUpdateError.message
-                  : String(statusUpdateError),
-            });
+          if (runningStatusUpdatedAt) {
+            try {
+              const failedProfile = await caregiverProfileRepository.updateMatchingStatusByProfileId(
+                caregiverId,
+                'failed',
+                errorMessage,
+                {
+                  expectedCurrentStatus: 'running',
+                  expectedMatchingUpdatedAt: runningStatusUpdatedAt,
+                }
+              );
+              if (!failedProfile) {
+                logger.info('Skipped stale caregiver rematch failure status update', {
+                  caregiverId,
+                });
+              }
+            } catch (statusUpdateError: unknown) {
+              logger.error('Failed to persist caregiver rematch failure status', {
+                caregiverId,
+                error:
+                  statusUpdateError instanceof Error
+                    ? statusUpdateError.message
+                    : String(statusUpdateError),
+              });
+            }
           }
 
           logger.error('Background caregiver rematch failed', {
             caregiverId,
+            queuedStatusUpdatedAt: String(queuedStatusUpdatedAt),
             error: errorMessage,
           });
         }

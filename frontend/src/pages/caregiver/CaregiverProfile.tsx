@@ -40,7 +40,7 @@ const getMatchingStatusMessage = (
   matchingStatus: MatchingStatus | undefined,
   matchingError: string | null | undefined
 ): string => {
-  if (matchingStatus === 'queued' || matchingStatus === 'running') {
+  if (isMatchingRefreshInProgress(matchingStatus)) {
     return 'Profile updated successfully. Matching refresh is in progress.';
   }
 
@@ -52,6 +52,9 @@ const getMatchingStatusMessage = (
 
   return 'Profile updated successfully! ✓';
 };
+
+const isMatchingRefreshInProgress = (matchingStatus: MatchingStatus | undefined): boolean =>
+  matchingStatus === 'queued' || matchingStatus === 'running';
 
 const CaregiverProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -77,6 +80,8 @@ const CaregiverProfile: React.FC = () => {
   const [newSkillOption, setNewSkillOption] = useState('');
   const [experienceOptions, setExperienceOptions] = useState<string[]>([]);
   const [newExperienceOption, setNewExperienceOption] = useState('');
+  const profileId = state.profile?.id;
+  const matchingStatus = state.profile?.matching_status;
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -101,6 +106,60 @@ const CaregiverProfile: React.FC = () => {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    if (!profileId || !isMatchingRefreshInProgress(matchingStatus)) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const pollMatchingStatus = async () => {
+      try {
+        const latestProfile = await apiGet<CaregiverProfileType>(CAREGIVER_PROFILE);
+        if (isCancelled) {
+          return;
+        }
+
+        setState((prev) => ({
+          ...prev,
+          profile: latestProfile,
+          loading: false,
+          error: null,
+        }));
+        setSaveSuccessMessage(
+          getMatchingStatusMessage(latestProfile.matching_status, latestProfile.matching_error)
+        );
+        if (latestProfile.matching_status === 'failed') {
+          setSaveSuccess(false);
+        }
+
+        setSaveError((prev) =>
+          prev?.startsWith('Unable to refresh matching status:') ? null : prev
+        );
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+
+        setSaveError(
+          error instanceof Error
+            ? `Unable to refresh matching status: ${error.message}`
+            : 'Unable to refresh matching status. Please reload the page.'
+        );
+      }
+    };
+
+    void pollMatchingStatus();
+    const intervalId = window.setInterval(() => {
+      void pollMatchingStatus();
+    }, 3000);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [matchingStatus, profileId]);
 
   useEffect(() => {
     const fetchSkillOptions = async () => {
@@ -429,13 +488,11 @@ const CaregiverProfile: React.FC = () => {
           </div>
         )}
 
-        {!saveSuccess &&
-          (state.profile?.matching_status === 'queued' ||
-            state.profile?.matching_status === 'running') && (
-            <div className="success-banner">
-              <p>Matching refresh is in progress for your latest profile update.</p>
-            </div>
-          )}
+        {!saveSuccess && isMatchingRefreshInProgress(state.profile?.matching_status) && (
+          <div className="success-banner">
+            <p>Matching refresh is in progress for your latest profile update.</p>
+          </div>
+        )}
 
         {saveError && (
           <div className="error-banner">
