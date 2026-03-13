@@ -20,7 +20,6 @@ import type { CaregiverProfile } from '../../types';
 import CaregiverPersonalInfoSection from './components/CaregiverPersonalInfoSection';
 import CaregiverSkillsExperienceSection from './components/CaregiverSkillsExperienceSection';
 import CaregiverAvailabilityQualificationsSection from './components/CaregiverAvailabilityQualificationsSection';
-import { SKILLS_OPTIONS } from './components/caregiverFormConstants';
 import './CaregiverOnboarding.css';
 
 interface FormErrors {
@@ -56,6 +55,8 @@ const CaregiverOnboarding: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [locationFields, setLocationFields] = useState<LocationFields>(emptyLocationFields());
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+  const [newSkillOption, setNewSkillOption] = useState('');
   const [experienceOptions, setExperienceOptions] = useState<string[]>([]);
   const [newExperienceOption, setNewExperienceOption] = useState('');
 
@@ -97,7 +98,14 @@ const CaregiverOnboarding: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchExperienceOptions = async () => {
+    const fetchSelectOptions = async () => {
+      try {
+        const options = await apiGet<string[]>('/api/skill-options');
+        setSkillOptions(options || []);
+      } catch {
+        setSkillOptions([]);
+      }
+
       try {
         const options = await apiGet<string[]>('/api/experience-options');
         setExperienceOptions(options || []);
@@ -106,7 +114,7 @@ const CaregiverOnboarding: React.FC = () => {
       }
     };
 
-    fetchExperienceOptions();
+    fetchSelectOptions();
   }, []);
 
   const handleExperienceTagToggle = (tag: string) => {
@@ -141,6 +149,28 @@ const CaregiverOnboarding: React.FC = () => {
       setNewExperienceOption('');
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Failed to add experience option');
+    }
+  };
+
+  const handleAddSkillOption = async () => {
+    const label = newSkillOption.trim();
+    if (!label) {
+      return;
+    }
+
+    try {
+      const createdLabel = await apiPost<string>('/api/skill-options', { label });
+      setSkillOptions((prev) => (prev.includes(createdLabel) ? prev : [...prev, createdLabel].sort()));
+      setFormData((prev) => ({
+        ...prev,
+        skills: prev.skills.includes(createdLabel) ? prev.skills : [...prev.skills, createdLabel],
+      }));
+      setNewSkillOption('');
+      if (errors.skills) {
+        setErrors((prev) => ({ ...prev, skills: '' }));
+      }
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to add skill option');
     }
   };
 
@@ -363,9 +393,12 @@ const CaregiverOnboarding: React.FC = () => {
               title="Skills & Experience"
               disabled={loading}
               errors={errors}
-              skillsOptions={SKILLS_OPTIONS}
+              skillsOptions={skillOptions}
               selectedSkills={formData.skills}
               onSkillToggle={handleSkillChange}
+              newSkillOption={newSkillOption}
+              onNewSkillOptionChange={setNewSkillOption}
+              onAddSkillOption={handleAddSkillOption}
               experienceOptions={experienceOptions}
               selectedExperienceTags={formData.experience_tags}
               onExperienceTagToggle={handleExperienceTagToggle}

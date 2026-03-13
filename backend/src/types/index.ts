@@ -106,6 +106,14 @@ export interface ExperienceOption {
   created_at: Date;
 }
 
+export interface SkillOption {
+  id: string;
+  label: string;
+  normalized_label: string;
+  created_by_user_id: string | null;
+  created_at: Date;
+}
+
 export interface TokenPayload extends AuthPayload {
   iat: number;
   exp: number;

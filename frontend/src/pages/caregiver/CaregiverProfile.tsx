@@ -24,7 +24,6 @@ import type { CaregiverProfile as CaregiverProfileType } from '../../types';
 import CaregiverPersonalInfoSection from './components/CaregiverPersonalInfoSection';
 import CaregiverSkillsExperienceSection from './components/CaregiverSkillsExperienceSection';
 import CaregiverAvailabilityQualificationsSection from './components/CaregiverAvailabilityQualificationsSection';
-import { SKILLS_OPTIONS } from './components/caregiverFormConstants';
 import './CaregiverProfile.css';
 
 interface FormErrors {
@@ -56,6 +55,8 @@ const CaregiverProfile: React.FC = () => {
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
   const [legacyAvailability, setLegacyAvailability] = useState('');
   const [locationFields, setLocationFields] = useState<LocationFields>(emptyLocationFields());
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+  const [newSkillOption, setNewSkillOption] = useState('');
   const [experienceOptions, setExperienceOptions] = useState<string[]>([]);
   const [newExperienceOption, setNewExperienceOption] = useState('');
 
@@ -82,6 +83,19 @@ const CaregiverProfile: React.FC = () => {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    const fetchSkillOptions = async () => {
+      try {
+        const options = await apiGet<string[]>('/api/skill-options');
+        setSkillOptions(options || []);
+      } catch {
+        setSkillOptions([]);
+      }
+    };
+
+    fetchSkillOptions();
+  }, []);
 
   useEffect(() => {
     const fetchExperienceOptions = async () => {
@@ -231,6 +245,28 @@ const CaregiverProfile: React.FC = () => {
       setNewExperienceOption('');
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Failed to add experience option');
+    }
+  };
+
+  const handleAddSkillOption = async () => {
+    const label = newSkillOption.trim();
+    if (!label) {
+      return;
+    }
+
+    try {
+      const createdLabel = await apiPost<string>('/api/skill-options', { label });
+      setSkillOptions((prev) => (prev.includes(createdLabel) ? prev : [...prev, createdLabel].sort()));
+      setEditData((prev) => {
+        const currentSkills = prev.skills || [];
+        return {
+          ...prev,
+          skills: currentSkills.includes(createdLabel) ? currentSkills : [...currentSkills, createdLabel],
+        };
+      });
+      setNewSkillOption('');
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Failed to add skill option');
     }
   };
 
@@ -402,9 +438,12 @@ const CaregiverProfile: React.FC = () => {
               title="Skills & Experience"
               disabled={saving}
               errors={errors}
-              skillsOptions={SKILLS_OPTIONS}
+              skillsOptions={skillOptions}
               selectedSkills={editData.skills || []}
               onSkillToggle={handleSkillChange}
+              newSkillOption={newSkillOption}
+              onNewSkillOptionChange={setNewSkillOption}
+              onAddSkillOption={handleAddSkillOption}
               experienceOptions={experienceOptions}
               selectedExperienceTags={editData.experience_tags || []}
               onExperienceTagToggle={handleExperienceTagToggle}

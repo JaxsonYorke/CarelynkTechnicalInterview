@@ -1,6 +1,6 @@
 # Carelynk Backend API
 
-Backend service for the Carelynk homecare matching MVP.  
+Backend service for the Carelynk homecare matching MVP.
 This API handles authentication, caregiver/seeker profiles, care request lifecycle, rule-based matching, and job acceptance workflow.
 
 ## Tech stack
@@ -72,7 +72,7 @@ backend/
 
 ## API surface
 
-All API routes are mounted under `/api`.  
+All API routes are mounted under `/api`.
 `/health` and `/api/version` are public diagnostics.
 
 ### Public auth routes (no token required)
@@ -111,6 +111,8 @@ All API routes are mounted under `/api`.
 
 - `GET /api/experience-options`
 - `POST /api/experience-options` (caregiver role)
+- `GET /api/skill-options`
+- `POST /api/skill-options` (caregiver role)
 
 ## Data model (summary)
 
@@ -122,6 +124,7 @@ Core tables include:
 - `care_requests`
 - `matches`
 - `experience_options`
+- `skill_options`
 - `job_accept_requests`
 
 Schema evolution is managed via SQL migrations in `src/db/migrations/`.

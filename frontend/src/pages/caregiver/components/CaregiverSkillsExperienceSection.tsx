@@ -9,6 +9,9 @@ interface CaregiverSkillsExperienceSectionProps {
   skillsOptions: string[];
   selectedSkills: string[];
   onSkillToggle: (skill: string) => void;
+  newSkillOption?: string;
+  onNewSkillOptionChange?: (value: string) => void;
+  onAddSkillOption?: () => void;
   experienceOptions: string[];
   selectedExperienceTags: string[];
   onExperienceTagToggle: (tag: string) => void;
@@ -29,6 +32,9 @@ const CaregiverSkillsExperienceSection: React.FC<CaregiverSkillsExperienceSectio
   skillsOptions,
   selectedSkills,
   onSkillToggle,
+  newSkillOption,
+  onNewSkillOptionChange,
+  onAddSkillOption,
   experienceOptions,
   selectedExperienceTags,
   onExperienceTagToggle,
@@ -56,6 +62,25 @@ const CaregiverSkillsExperienceSection: React.FC<CaregiverSkillsExperienceSectio
           </label>
         ))}
       </div>
+      {onAddSkillOption && onNewSkillOptionChange && newSkillOption !== undefined && (
+        <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+          <input
+            type="text"
+            value={newSkillOption}
+            onChange={(event) => onNewSkillOptionChange(event.target.value)}
+            placeholder="Add new skill"
+            disabled={disabled}
+          />
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onAddSkillOption}
+            disabled={disabled || newSkillOption.trim().length === 0}
+          >
+            Add
+          </button>
+        </div>
+      )}
       {errors.skills && <span className="error">{errors.skills}</span>}
     </div>
 

@@ -126,7 +126,7 @@ npm run seed:dummy
 
 ## Demo login credentials
 
-All caregiver demo users use password: `Caregiver123!`  
+All caregiver demo users use password: `Caregiver123!`
 All care seeker demo users use password: `Seeker123!`
 
 ### Caregiver accounts
@@ -194,7 +194,7 @@ Matching executes when a care request is created or updated.
 
 A caregiver matches only when all are true:
 
-- **Location match:** request `service_location_details` and caregiver location data match by normalized region fields
+- **Location match:** A match will happen if both the request and seeker are in the same country and state/province. This is a major assumption, and made like this for ease of showing matches. I did mess aroung with using geoencoding services, but I decided they were too much for this project.
 - **Availability match:** Care Request time-day slots fall withing Care Giver's Availability times and days.
 - **Experience match:** each required experience is found in caregiver skills or experience tags.
 
