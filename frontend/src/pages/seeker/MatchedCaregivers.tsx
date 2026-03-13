@@ -231,7 +231,7 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({
   const buttonLabel = accepting
     ? 'Sending...'
     : isAnotherCaregiverAccepted
-      ? 'Not Selected'
+      ? 'Another Caregiver Selected'
     : isAcceptedCaregiver
       ? 'Request Sent'
       : hasAcceptRequest
