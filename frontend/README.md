@@ -1,46 +1,176 @@
-# Getting Started with Create React App
+# Carelynk Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React + TypeScript client for the Carelynk homecare MVP.  
+The frontend provides separate caregiver and care seeker flows, JWT-based session handling, and role-protected routing.
 
-## Available Scripts
+## Tech stack
 
-In the project directory, you can run:
+- Framework: React 19 + TypeScript
+- Routing: `react-router-dom` (data-router API via `createBrowserRouter`)
+- Forms: `react-hook-form`
+- HTTP: Fetch wrapper in `src/services/api.ts`
+- Build tooling: `react-scripts` (CRA-based setup)
 
-### `npm start`
+## Product behavior covered in UI
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- Public landing experience
+- Auth for both user roles
+- Caregiver onboarding/profile + accepted job workflow
+- Care seeker profile + job request creation/editing + match review
+- Role-based route protection on client side
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Frontend architecture
 
-### `npm test`
+### Routing and composition
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- `src/App.tsx` mounts the router only.
+- `src/Router.tsx` defines all routes and wraps them in `AuthProvider`.
+- `src/components/ProtectedRoute.tsx` enforces auth and role checks before rendering portal routes.
 
-### `npm run build`
+### Auth/session state
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- `src/context/AuthContext.tsx` holds user/token/loading/error state.
+- JWT is read from local storage on app boot and decoded client-side (`src/utils/auth.ts`).
+- Auth header injection happens centrally in `src/services/api.ts`.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### API integration
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- `apiCall` in `src/services/api.ts` handles:
+  - base URL composition
+  - JSON parsing
+  - auth header attachment
+  - HTTP/non-HTTP error normalization
+  - token clearing on `401`
 
-### `npm run eject`
+- Base URL is configured via:
+  - `REACT_APP_API_BASE_URL` (preferred)
+  - fallback: `http://localhost:3001`
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## Project structure
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```text
+frontend/
+├─ src/
+│  ├─ App.tsx                         # Root app component
+│  ├─ Router.tsx                      # Full route tree (public + role-protected)
+│  ├─ context/
+│  │  └─ AuthContext.tsx              # Global auth/session state
+│  ├─ components/
+│  │  └─ ProtectedRoute.tsx           # Auth + role route guard
+│  ├─ pages/
+│  │  ├─ Landing.tsx                  # Public landing page
+│  │  ├─ NotFound.tsx                 # 404 page
+│  │  ├─ auth/                        # Signup/login forms per role
+│  │  ├─ caregiver/                   # Caregiver dashboard/profile/onboarding/accepted jobs
+│  │  └─ seeker/                      # Seeker dashboard/profile/jobs/matches
+│  ├─ services/
+│  │  └─ api.ts                       # HTTP utility and typed convenience methods
+│  ├─ utils/
+│  │  ├─ constants.ts                 # API endpoints, storage keys, UX constants
+│  │  ├─ auth.ts                      # JWT localStorage/decode helpers
+│  │  ├─ validators.ts                # Form validation helpers
+│  │  ├─ location.ts                  # Location transformation helpers
+│  │  └─ availability.ts              # Availability parsing/formatting helpers
+│  ├─ types/
+│  │  └─ index.ts                     # Shared frontend interfaces
+│  └─ index.tsx                       # React entrypoint
+├─ Dockerfile
+├─ package.json
+└─ README.md
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## Route map
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Public routes
 
-## Learn More
+- `/` - Landing
+- `/auth/caregiver/signup`
+- `/auth/caregiver/login`
+- `/auth/seeker/signup`
+- `/auth/seeker/login`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Caregiver portal routes (requires `caregiver` role)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- `/caregiver/dashboard`
+- `/caregiver/profile`
+- `/caregiver/onboarding`
+- `/caregiver/accepted-jobs`
+
+### Care seeker portal routes (requires `care_seeker` role)
+
+- `/seeker/dashboard`
+- `/seeker/profile`
+- `/seeker/create-job`
+- `/seeker/jobs/:jobId/edit`
+- `/seeker/my-jobs`
+- `/seeker/matches/:jobId`
+
+## Design decisions
+
+- Single API module: all requests route through one service to keep auth, errors, and response handling consistent.
+- Client role guard + server role guard: frontend improves UX with protected routes, while backend remains source of truth.
+- Local-storage JWT persistence: keeps refresh behavior simple for this MVP and supports route restoration on reload.
+- Domain-oriented pages: caregiver and seeker paths are physically separated to reduce role-flow coupling.
+
+## Environment configuration
+
+Create `.env` in `frontend/` when needed:
+
+```bash
+REACT_APP_API_BASE_URL=http://localhost:3001
+```
+
+If omitted, the app defaults to `http://localhost:3001`.
+
+## Run instructions
+
+### Local development
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+App runs at `http://localhost:3000`.
+
+### Build
+
+```bash
+npm run build
+```
+
+`npm run build` runs `node ./scripts/build-with-webpack-fix.cjs`, which invokes `react-scripts build` with a Node/OpenSSL compatibility flag.
+
+### Tests
+
+```bash
+npm test
+```
+
+### Docker Compose (from repo root)
+
+```bash
+docker compose up --build
+```
+
+In Compose:
+
+- frontend runs at `http://localhost:3000`
+- frontend calls backend at `http://localhost:3001`
+
+## Scripts
+
+- `npm start` - dev server
+- `npm run build` - runs `node ./scripts/build-with-webpack-fix.cjs` (compat wrapper around `react-scripts build`)
+- `npm test` - test runner
+- `npm run eject` - CRA eject (irreversible)
+
+## Employer review notes
+
+This frontend demonstrates:
+
+- clean role-based portal separation
+- practical auth/session handling with route-level protection
+- centralized API contract handling
+- maintainable module layout for feature expansion

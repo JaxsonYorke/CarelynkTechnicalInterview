@@ -12,12 +12,14 @@ export interface AuthRequest extends Request {
 
 export const errorHandler = (
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void => {
+  const requestContext = `${req.method} ${req.originalUrl}`;
+
   if (err instanceof AppError) {
-    logger.warn(`${err.statusCode} - ${err.message}`);
+    logger.warn(`${err.statusCode} - ${requestContext} - ${err.message}`);
     const response: Record<string, unknown> = {
       success: false,
       error: {
@@ -32,7 +34,7 @@ export const errorHandler = (
   }
 
   if (err instanceof Error) {
-    logger.error(`Unhandled error: ${err.message}\n${err.stack}`);
+    logger.error(`Unhandled error (${requestContext}): ${err.message}\n${err.stack}`);
     res.status(500).json({
       success: false,
       error: {
@@ -42,7 +44,7 @@ export const errorHandler = (
     return;
   }
 
-  logger.error(`Unknown error: ${err}`);
+  logger.error(`Unknown error (${requestContext}): ${String(err)}`);
   res.status(500).json({
     success: false,
     error: {

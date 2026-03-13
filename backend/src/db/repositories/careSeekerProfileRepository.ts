@@ -1,5 +1,6 @@
 import { getDatabase } from '../../db/connection';
 import { CareSeekerProfile } from '../../types';
+import { firstRowOrNull } from './helpers';
 
 export const careSeekerProfileRepository = {
   async create(
@@ -22,7 +23,7 @@ export const careSeekerProfileRepository = {
     const result = await db<CareSeekerProfile[]>`
       SELECT * FROM care_seeker_profiles WHERE user_id = ${userId}
     `;
-    return result.length > 0 ? result[0] : null;
+    return firstRowOrNull(result);
   },
 
   async findById(id: string): Promise<CareSeekerProfile | null> {
@@ -30,7 +31,7 @@ export const careSeekerProfileRepository = {
     const result = await db<CareSeekerProfile[]>`
       SELECT * FROM care_seeker_profiles WHERE id = ${id}
     `;
-    return result.length > 0 ? result[0] : null;
+    return firstRowOrNull(result);
   },
 
   async update(
@@ -38,30 +39,24 @@ export const careSeekerProfileRepository = {
     data: Partial<Omit<CareSeekerProfile, 'id' | 'user_id' | 'created_at'>>
   ): Promise<CareSeekerProfile | null> {
     const db = getDatabase();
-    const updates: string[] = [];
-    const values: unknown[] = [];
-
-    if (data.name !== undefined) {
-      updates.push(`name = $${updates.length + 1}`);
-      values.push(data.name);
-    }
-    if (data.contact_info !== undefined) {
-      updates.push(`contact_info = $${updates.length + 1}`);
-      values.push(data.contact_info);
-    }
-    if (data.location !== undefined) {
-      updates.push(`location = $${updates.length + 1}`);
-      values.push(data.location);
+    const currentProfile = await this.findByUserId(userId);
+    if (!currentProfile) {
+      return null;
     }
 
-    if (updates.length === 0) return this.findByUserId(userId);
+    const nextName = data.name ?? currentProfile.name;
+    const nextContactInfo = data.contact_info ?? currentProfile.contact_info;
+    const nextLocation = data.location ?? currentProfile.location;
 
     const result = await db<CareSeekerProfile[]>`
       UPDATE care_seeker_profiles 
-      SET ${db.unsafe(updates.join(', '))}
+      SET
+        name = ${nextName},
+        contact_info = ${nextContactInfo},
+        location = ${nextLocation}
       WHERE user_id = ${userId}
       RETURNING *
     `;
-    return result.length > 0 ? result[0] : null;
+    return firstRowOrNull(result);
   },
 };

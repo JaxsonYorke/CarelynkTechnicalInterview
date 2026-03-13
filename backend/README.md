@@ -1,293 +1,211 @@
 # Carelynk Backend API
 
-A Node.js/TypeScript microservice backend for the Carelynk homecare onboarding and matching platform, connected to Supabase PostgreSQL.
+Backend service for the Carelynk homecare matching MVP.  
+This API handles authentication, caregiver/seeker profiles, care request lifecycle, rule-based matching, and job acceptance workflow.
 
-## Project Structure
+## Tech stack
 
-```
+- Runtime: Node.js + TypeScript
+- HTTP framework: Express
+- Database: PostgreSQL (`postgres` client)
+- Auth: JWT (`jsonwebtoken`) + password hashing (`bcryptjs`)
+- Validation: Zod + route-level validation
+- Logging: Winston
+- Security middleware: `helmet`, `cors`
+
+## High-level architecture
+
+The backend follows a layered structure:
+
+- `routes/` handles HTTP contracts and request validation
+- `services/` contains domain logic (for example matching)
+- `db/repositories/` contains SQL/data-access operations
+- `middleware/` centralizes auth and error handling
+- `types/` defines shared TypeScript contracts
+
+Startup flow (`src/index.ts`):
+
+1. Validate env config (`src/config/env.ts`)
+2. Initialize DB connection (`src/db/connection.ts`)
+3. Run SQL migrations (`src/db/migrate.ts`)
+4. Start Express app (`src/app.ts`)
+
+## Project structure
+
+```text
 backend/
-├── src/
-│   ├── config/          # Configuration files
-│   │   ├── env.ts       # Environment variables validation
-│   │   └── logger.ts    # Winston logger setup
-│   ├── db/
-│   │   ├── connection.ts         # Database connection management
-│   │   ├── migrate.ts            # Migration runner
-│   │   ├── migrations/           # SQL migration files
-│   │   └── repositories/         # Data access layer
-│   │       ├── userRepository.ts
-│   │       ├── caregiverProfileRepository.ts
-│   │       ├── careSeekerProfileRepository.ts
-│   │       ├── careRequestRepository.ts
-│   │       └── matchRepository.ts
-│   ├── middleware/      # Express middleware
-│   │   ├── auth.ts      # JWT authentication
-│   │   └── errorHandler.ts
-│   ├── services/        # Business logic (to be implemented)
-│   ├── routes/          # API route definitions (to be implemented)
-│   ├── types/           # TypeScript type definitions
-│   ├── utils/           # Utility functions
-│   ├── app.ts           # Express app factory
-│   └── index.ts         # Entry point
-├── dist/                # Compiled JavaScript output
-├── logs/                # Application logs
-├── .env                 # Environment variables (local)
-├── .env.example         # Environment variables template
-├── .eslintrc.json       # ESLint configuration
-├── nodemon.json         # Nodemon configuration
-├── package.json         # Dependencies and scripts
-└── tsconfig.json        # TypeScript configuration
+├─ src/
+│  ├─ app.ts                         # Express app setup, middleware, health/version routes
+│  ├─ index.ts                       # Service entrypoint + startup orchestration
+│  ├─ config/
+│  │  ├─ env.ts                      # Environment parsing/validation (Zod)
+│  │  └─ logger.ts                   # Winston logger config
+│  ├─ middleware/
+│  │  ├─ auth.ts                     # JWT parsing + role checks
+│  │  └─ errorHandler.ts             # Unified error response shape
+│  ├─ routes/
+│  │  ├─ index.ts                    # Route registration + auth middleware boundary
+│  │  ├─ auth/index.ts               # Signup/login (public)
+│  │  ├─ caregivers/profile.ts       # Caregiver profile CRUD-like upsert/get
+│  │  ├─ seekers/profile.ts          # Seeker profile upsert/get
+│  │  ├─ seekers/jobs.ts             # Job create/list/get/update/delete for seekers
+│  │  ├─ jobs/matches.ts             # Seeker view of caregiver matches
+│  │  ├─ jobs/acceptRequests.ts      # Seeker accept + caregiver inbox/accept
+│  │  └─ experiences.ts              # Shared experience option list/create
+│  ├─ services/
+│  │  ├─ authService.ts              # Token + password helpers
+│  │  └─ matchingService.ts          # Rule-based matching engine
+│  ├─ db/
+│  │  ├─ connection.ts               # Postgres connection lifecycle
+│  │  ├─ migrate.ts                  # SQL migration runner
+│  │  ├─ migrations/*.sql            # Incremental schema evolution
+│  │  └─ repositories/*.ts           # Data access per aggregate/table
+│  ├─ types/index.ts                 # Domain/API shared interfaces
+│  └─ utils/
+│     ├─ errors.ts                   # Typed HTTP errors
+│     └─ location.ts                 # Structured location normalization/comparison
+├─ Dockerfile
+├─ package.json
+├─ tsconfig.json
+└─ .env                              # Local environment variables (not committed in real projects)
 ```
 
-## Prerequisites
+## API surface
 
-- Node.js 18+ (v23.2.0 tested)
-- npm 10+
-- PostgreSQL database (Supabase recommended)
+All API routes are mounted under `/api`.  
+`/health` and `/api/version` are public diagnostics.
 
-## Installation
+### Public auth routes (no token required)
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+- `POST /api/auth/caregiver/signup`
+- `POST /api/auth/care_seeker/signup`
+- `POST /api/auth/login`
 
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   ```
+### Protected routes (JWT required)
 
-3. **Configure .env with your database connection:**
-   ```
-   NODE_ENV=development
-   PORT=3000
-   DATABASE_URL=postgresql://user:password@host:port/carelynk
-   JWT_SECRET=your-secret-key-minimum-32-characters
-   JWT_EXPIRE=7d
-   BCRYPT_ROUNDS=10
-   LOG_LEVEL=debug
-   ```
+`src/routes/index.ts` applies `authMiddleware` globally after auth routes.
 
-## Development
+#### Caregiver routes
 
-### Start Development Server
+- `GET /api/caregiver/profile`
+- `POST /api/caregiver/profile` (upsert)
+- `PUT /api/caregiver/profile`
+- `GET /api/caregiver/job-accept-requests`
+- `GET /api/caregiver/accepted-jobs`
+- `POST /api/caregiver/job-accept-requests/:requestId/accept`
+
+#### Care seeker routes
+
+- `GET /api/seekers/profile`
+- `POST /api/seekers/profile` (upsert)
+- `PUT /api/seekers/profile`
+- `POST /api/jobs`
+- `GET /api/jobs`
+- `GET /api/jobs/:jobId`
+- `PATCH /api/jobs/:jobId`
+- `DELETE /api/jobs/:jobId`
+- `GET /api/jobs/:jobId/matches`
+- `POST /api/jobs/:jobId/accept`
+
+#### Shared routes
+
+- `GET /api/experience-options`
+- `POST /api/experience-options` (caregiver role)
+
+## Data model (summary)
+
+Core tables include:
+
+- `users`
+- `caregiver_profiles`
+- `care_seeker_profiles`
+- `care_requests`
+- `matches`
+- `experience_options`
+- `job_accept_requests`
+
+Schema evolution is managed via SQL migrations in `src/db/migrations/`.
+
+## Key design decisions
+
+- Role-segmented APIs: role checks happen server-side (`requireRole`) even if UI routing also guards by role.
+- Upsert-style profile endpoints: `POST` profile endpoints create or update to simplify onboarding flows.
+- Matching as a service layer concern: `matchingService` is triggered after create/update job operations, not embedded in route files.
+- Structured + legacy location support: matching normalizes both structured fields and legacy strings for backward compatibility.
+- Consistent response envelope: API responses use `{ success, data }` or `{ success: false, error }`.
+
+## Matching behavior
+
+`src/services/matchingService.ts` matches caregivers to jobs using:
+
+1. Availability overlap (structured slot comparison when possible, token fallback otherwise)
+2. Regional location compatibility
+3. Required experience coverage (skills, experience tags, or free-text experience)
+
+Matches are stored in `matches`, and refreshed on job updates.
+
+## Environment variables
+
+Validated in `src/config/env.ts`.
+
+| Variable | Required | Default | Notes |
+|---|---|---|---|
+| `NODE_ENV` | No | `development` | `development \| production \| test` |
+| `PORT` | No | `3000` | App listen port |
+| `DATABASE_URL` | Yes | - | Must start with `postgresql://` or `postgres://` |
+| `JWT_SECRET` | Yes | - | Minimum 32 chars |
+| `JWT_EXPIRE` | No | `7d` | JWT expiry string |
+| `BCRYPT_ROUNDS` | No | `10` | Password hash cost |
+| `LOG_LEVEL` | No | `info` | `error \| warn \| info \| debug` |
+
+## Run instructions
+
+### Local development
 
 ```bash
+cd backend
+npm install
 npm run dev
 ```
 
-The server will start on `http://localhost:3000` and automatically reload on file changes.
+Backend runs on the configured `PORT` (project default currently uses `3001` in local `.env`).
 
-### Build for Production
+### Build and run
 
 ```bash
 npm run build
-```
-
-### Start Production Server
-
-```bash
 npm start
 ```
 
-### Lint Code
+### Docker Compose (from repo root)
 
 ```bash
-npm run lint
+docker compose up --build
 ```
 
-## Database
+In Compose:
 
-### Schema Overview
+- backend is exposed at `http://localhost:3001`
+- backend connects to DB using service hostname `db`
 
-The database includes the following tables:
+## Scripts
 
-#### users
-- `id`: UUID (Primary Key)
-- `email`: VARCHAR(255) - Unique email address
-- `password_hash`: VARCHAR(255) - Bcrypt hashed password
-- `role`: VARCHAR(20) - Either 'caregiver' or 'care_seeker'
-- `created_at`: TIMESTAMP
+- `npm run dev` - nodemon + ts-node hot reload
+- `npm run build` - TypeScript compile to `dist/`
+- `npm start` - run compiled server
+- `npm run lint` - ESLint over `src/**/*.ts`
 
-#### caregiver_profiles
-- `id`: UUID (Primary Key)
-- `user_id`: UUID (Foreign Key to users)
-- `name`: VARCHAR(100)
-- `contact_info`: VARCHAR(255)
-- `location`: VARCHAR(100)
-- `skills`: TEXT[] - Array of skills
-- `experience`: TEXT - Optional experience description
-- `availability`: TEXT - Availability description
-- `qualifications`: TEXT - Optional certifications
-- `created_at`: TIMESTAMP
+## Error handling and observability
 
-#### care_seeker_profiles
-- `id`: UUID (Primary Key)
-- `user_id`: UUID (Foreign Key to users)
-- `name`: VARCHAR(100)
-- `contact_info`: VARCHAR(255)
-- `location`: VARCHAR(100)
-- `created_at`: TIMESTAMP
+- Domain/validation/auth errors are raised as typed `AppError` subclasses.
+- `errorHandler` maps these to HTTP status codes and stable payloads.
+- Unexpected errors return `500` with sanitized message and are logged via Winston.
 
-#### care_requests
-- `id`: UUID (Primary Key)
-- `care_seeker_id`: UUID (Foreign Key to care_seeker_profiles)
-- `care_type`: VARCHAR(100)
-- `service_location`: VARCHAR(100)
-- `schedule`: TEXT
-- `duration`: VARCHAR(50) - Optional
-- `preferences`: TEXT - Optional
-- `created_at`: TIMESTAMP
+## Employer review notes
 
-#### matches
-- `id`: UUID (Primary Key)
-- `care_request_id`: UUID (Foreign Key to care_requests)
-- `caregiver_id`: UUID (Foreign Key to caregiver_profiles)
-- `matched_at`: TIMESTAMP
+This backend is designed to demonstrate:
 
-### Running Migrations
-
-Migrations are automatically run on server startup. They are located in `src/db/migrations/`.
-
-To manually run migrations, the server will execute them during initialization.
-
-## Architecture
-
-### Technology Stack
-
-- **Runtime:** Node.js with TypeScript
-- **Framework:** Express.js
-- **Database:** PostgreSQL (via postgres npm package)
-- **Authentication:** JWT with Bcrypt for password hashing
-- **Validation:** Zod for runtime type validation
-- **Logging:** Winston
-- **Security:** Helmet for HTTP headers, CORS support
-
-### Key Design Patterns
-
-1. **Repository Pattern:** Data access is abstracted into repository functions
-2. **Service Layer:** Business logic is separated from controllers
-3. **Middleware:** JWT auth and error handling via Express middleware
-4. **Error Handling:** Custom AppError classes with consistent error responses
-5. **Type Safety:** Full TypeScript coverage with strict mode enabled
-
-## API Endpoints (To Be Implemented)
-
-### Authentication
-- `POST /api/auth/caregiver/signup` - Caregiver registration
-- `POST /api/auth/caregiver/login` - Caregiver login
-- `POST /api/auth/seeker/signup` - Care seeker registration
-- `POST /api/auth/seeker/login` - Care seeker login
-
-### Caregiver Routes
-- `GET /api/caregivers/profile` - Get caregiver profile
-- `POST /api/caregivers/profile` - Create caregiver profile
-- `PUT /api/caregivers/profile` - Update caregiver profile
-
-### Care Seeker Routes
-- `GET /api/seekers/profile` - Get care seeker profile
-- `POST /api/seekers/profile` - Create care seeker profile
-- `PUT /api/seekers/profile` - Update care seeker profile
-- `POST /api/jobs` - Create care request
-- `GET /api/jobs/:id/matches` - Get matched caregivers for a job
-
-### Health Check
-- `GET /health` - Server health check
-- `GET /api/version` - API version
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| NODE_ENV | Yes | development | Environment mode |
-| PORT | No | 3000 | Server port |
-| DATABASE_URL | Yes | - | PostgreSQL connection string |
-| JWT_SECRET | Yes | - | Secret for JWT signing (min 32 chars) |
-| JWT_EXPIRE | No | 7d | JWT expiration time |
-| BCRYPT_ROUNDS | No | 10 | Bcrypt hashing rounds |
-| LOG_LEVEL | No | info | Winston log level |
-
-### Logging
-
-Logs are written to:
-- Console (all levels, colorized in development)
-- `logs/all.log` (all log entries)
-- `logs/error.log` (errors only)
-
-## Error Handling
-
-All errors follow this format:
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Error description",
-    "details": "Optional additional info"
-  }
-}
-```
-
-### HTTP Status Codes
-
-- `200` - Success
-- `201` - Created
-- `400` - Bad Request / Validation Error
-- `401` - Unauthorized
-- `404` - Not Found
-- `409` - Conflict
-- `500` - Internal Server Error
-
-## Testing
-
-The foundation is set for integration with testing frameworks. Tests should be placed in `src/**/*.test.ts` files.
-
-## Docker Support
-
-A Dockerfile and docker-compose configuration should be added to run the backend and PostgreSQL locally.
-
-## Deployment
-
-For production deployment:
-
-1. Build the project: `npm run build`
-2. Set production environment variables
-3. Run: `npm start`
-
-Ensure:
-- DATABASE_URL points to production database
-- JWT_SECRET is strong and securely managed
-- LOG_LEVEL is set to 'warn' or 'error'
-- NODE_ENV is set to 'production'
-
-## Next Steps
-
-The foundation is complete. Next phases include:
-
-1. **Phase 3:** Implement authentication service and endpoints
-2. **Phase 4:** Build caregiver and care seeker API endpoints
-3. **Phase 5:** Implement matching algorithm
-4. **Phase 6:** Add error handling and validation
-5. **Phase 7:** Docker setup
-6. **Phase 8:** API documentation
-
-## Troubleshooting
-
-### Database Connection Issues
-- Verify DATABASE_URL format: `postgresql://user:password@host:port/database`
-- Check database credentials
-- Ensure PostgreSQL is running
-
-### TypeScript Compilation Errors
-- Run `npm install` to ensure all types are installed
-- Check tsconfig.json is in the root directory
-
-### Port Already in Use
-- Change PORT in .env file
-- Or kill the process using the port
-
-## License
-
-ISC
+- pragmatic layered architecture for a TypeScript API
+- role-aware authorization and input validation
+- SQL-backed domain workflows (matching + acceptance lifecycle)
+- maintainable extension points via service/repository boundaries

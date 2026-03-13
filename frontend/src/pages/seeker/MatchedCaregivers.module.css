@@ -1,0 +1,541 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 30px 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+  color: #2c3e50;
+}
+
+.title {
+  font-size: 42px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.navigation {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.backButton,
+.newJobButton {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.backButton {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.backButton:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.newJobButton {
+  background: #667eea;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.newJobButton:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: white;
+  border-radius: 12px;
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #ecf0f1;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  color: #7f8c8d;
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Error State */
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+.error {
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  width: 100%;
+}
+
+.errorTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #c0392b;
+  margin: 0 0 10px 0;
+}
+
+.errorMessage {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin: 0 0 20px 0;
+}
+
+.retryButton {
+  padding: 12px 32px;
+  background: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.retryButton:hover {
+  background: #a93226;
+  transform: translateY(-2px);
+}
+
+/* Success State */
+.successContainer {
+  display: flex;
+  justify-content: center;
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+.success {
+  background: #eafaf1;
+  border: 1px solid #c7f0d8;
+  border-radius: 8px;
+  padding: 18px 24px;
+  width: 100%;
+}
+
+.successTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f7a3d;
+  margin: 0 0 6px 0;
+}
+
+.successMessage {
+  font-size: 14px;
+  color: #2f855a;
+  margin: 0;
+}
+
+/* Empty State */
+.emptyContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+.emptyState {
+  text-align: center;
+  background: white;
+  padding: 60px 40px;
+  border-radius: 12px;
+  width: 100%;
+}
+
+.emptyIcon {
+  font-size: 64px;
+  margin: 0 0 20px 0;
+}
+
+.emptyTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 10px 0;
+}
+
+.emptyMessage {
+  font-size: 16px;
+  color: #7f8c8d;
+  margin: 0 0 30px 0;
+  line-height: 1.6;
+}
+
+.emptyActionButton {
+  padding: 12px 32px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.emptyActionButton:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+}
+
+/* Matches Container */
+.matchesContainer {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.matchCount {
+  font-size: 16px;
+  color: #7f8c8d;
+  text-align: center;
+  margin: 0 0 30px 0;
+}
+
+.matchCount strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.matchesList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+/* Caregiver Card */
+.card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+}
+
+.cardHeader {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.caregiverName {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.matchedDate {
+  font-size: 12px;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.cardBody {
+  padding: 25px;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+
+.infoRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.label {
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 120px;
+}
+
+.value {
+  color: #7f8c8d;
+  font-size: 15px;
+}
+
+.skillsRow,
+.qualificationsRow {
+  margin-bottom: 20px;
+}
+
+.skillsRow:last-of-type,
+.qualificationsRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.skills,
+.qualifications {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.skillTag,
+.qualificationTag {
+  display: inline-block;
+  background: #f0f4ff;
+  color: #667eea;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.qualificationTag {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.cardFooter {
+  padding: 20px 25px;
+  border-top: 1px solid #ecf0f1;
+  background: #f8f9fa;
+}
+
+.contactButton {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.contactButton:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.contactButton:active {
+  transform: translateY(0);
+}
+
+.contactButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+
+.accepted {
+  font-size: 14px;
+  opacity: 0.9;
+  background: #16a34a;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.pending {
+  font-size: 14px;
+  opacity: 0.9;
+  background: #fffb02;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  color: #000000;
+  font-weight: 500;
+}
+
+.caregiverNameAndStatusDiv {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 15px;
+  }
+
+  .title {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .navigation {
+    gap: 10px;
+  }
+
+  .backButton,
+  .newJobButton {
+    padding: 10px 16px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .caregiverName {
+    font-size: 20px;
+  }
+
+  .matchedDate {
+    align-self: flex-start;
+  }
+
+  .label {
+    min-width: auto;
+  }
+
+  .infoRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .skillsRow,
+  .qualificationsRow {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 15px 10px;
+  }
+
+  .header {
+    margin-bottom: 25px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .navigation {
+    flex-direction: column;
+  }
+
+  .backButton,
+  .newJobButton {
+    flex: 1;
+    min-width: auto;
+  }
+
+  .cardHeader {
+    padding: 15px;
+  }
+
+  .cardBody {
+    padding: 15px;
+  }
+
+  .cardFooter {
+    padding: 15px;
+  }
+
+  .caregiverName {
+    font-size: 18px;
+  }
+
+  .emptyState {
+    padding: 40px 20px;
+  }
+
+  .emptyIcon {
+    font-size: 48px;
+  }
+
+  .emptyTitle {
+    font-size: 20px;
+  }
+}

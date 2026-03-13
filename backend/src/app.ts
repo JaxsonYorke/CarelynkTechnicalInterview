@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import env from './config/env';
 import logger from './config/logger';
 import { errorHandler } from './middleware/errorHandler';
+import apiRoutes from './routes';
 
 export function createApp(): express.Application {
   const app = express();
@@ -32,10 +33,8 @@ export function createApp(): express.Application {
     res.status(200).json({ version: '1.0.0' });
   });
 
-  // Routes will be added here
-  // TODO: Add auth routes
-  // TODO: Add caregiver routes
-  // TODO: Add care seeker routes
+  // API routes (includes auth, seekers, caregivers, jobs)
+  app.use('/api', apiRoutes);
 
   // Error handling middleware (must be last)
   app.use(errorHandler);

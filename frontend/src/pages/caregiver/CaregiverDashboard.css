@@ -1,0 +1,304 @@
+.caregiver-dashboard {
+  min-height: 100vh;
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  padding: 20px;
+}
+
+.caregiver-dashboard.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+}
+
+.dashboard-header {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  color: #333;
+  font-size: 28px;
+}
+
+.btn-logout {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.btn-logout:hover {
+  background-color: #c0392b;
+}
+
+.dashboard-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.welcome-section {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-section h2 {
+  color: #333;
+  margin: 0 0 10px 0;
+  font-size: 24px;
+}
+
+.welcome-section p {
+  color: #666;
+  margin: 0;
+  font-size: 16px;
+}
+
+.action-message {
+  margin-top: 12px !important;
+  color: #1e7e34 !important;
+  font-weight: 600;
+}
+
+.profile-section {
+  margin-bottom: 30px;
+}
+
+.profile-card {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-card h3 {
+  color: #333;
+  margin: 0 0 20px 0;
+  font-size: 20px;
+}
+
+.profile-completion {
+  margin-bottom: 20px;
+}
+
+.progress-bar {
+  height: 10px;
+  background-color: #ecf0f1;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+}
+
+.completion-text {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.profile-name,
+.profile-location {
+  color: #333;
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.no-profile {
+  color: #999;
+  font-style: italic;
+  margin: 0;
+}
+
+.error-message {
+  display: flex;
+  gap: 20px;
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffe6e6;
+  color: #cc0000;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  border-left: 4px solid #cc0000;
+}
+
+.actions-section {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.accepted-jobs-section {
+  margin-top: 30px;
+}
+
+.actions-section h3 {
+  color: #333;
+  margin: 0 0 20px 0;
+  font-size: 18px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: #667eea;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #5568d3;
+}
+
+.btn-secondary {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #7f8c8d;
+}
+
+.accept-request-list {
+  display: grid;
+  gap: 12px;
+}
+
+.accepted-job-list {
+  display: grid;
+  gap: 12px;
+}
+
+.accept-request-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 14px;
+  background: #fafafa;
+}
+
+.accepted-job-card {
+  border: 1px solid #dbe7ff;
+  border-radius: 6px;
+  padding: 14px;
+  background: #f5f8ff;
+}
+
+.accept-request-card p {
+  margin: 4px 0;
+  color: #333;
+}
+
+.accepted-job-card p {
+  margin: 4px 0;
+  color: #333;
+}
+
+.schedule-row {
+  margin: 6px 0;
+}
+
+.schedule-list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0 0;
+  display: grid;
+  gap: 6px;
+}
+
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eef3ff;
+  border: 1px solid #d5defa;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.schedule-day {
+  font-weight: 600;
+  color: #2f3f77;
+}
+
+.schedule-time {
+  color: #3f4a68;
+}
+
+.schedule-fallback {
+  margin-left: 8px;
+  color: #555;
+}
+
+.accept-request-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.section-empty-text {
+  color: #666;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 22px;
+  }
+
+  .welcome-section,
+  .profile-card,
+  .actions-section {
+    padding: 20px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
