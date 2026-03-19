@@ -37,7 +37,12 @@ router.get(
 
     // Get matches with caregiver details
     const matches = await matchRepository.findByRequestId(jobId);
-    const acceptRequest = await jobAcceptRequestRepository.findByCareRequestIdForSeeker(jobId);
+    const acceptRequests = await jobAcceptRequestRepository.findAllByCareRequestIdForSeeker(jobId);
+    
+    // Create a map of accept requests by caregiver_id for easy lookup
+    const acceptRequestsByCaregiver = new Map(
+      acceptRequests.map((ar) => [ar.caregiver_id, ar])
+    );
     
     const enrichedMatches = await Promise.all(
       matches.map(async (match) => {
@@ -54,7 +59,8 @@ router.get(
       data: {
         job_id: jobId,
         matches: enrichedMatches,
-        accept_request: acceptRequest,
+        accept_requests: acceptRequests,
+        accept_requests_by_caregiver: Object.fromEntries(acceptRequestsByCaregiver),
       },
     });
   })

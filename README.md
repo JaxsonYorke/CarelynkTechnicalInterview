@@ -158,6 +158,7 @@ docker compose up -d postgres
 ```bash
 cd backend
 npm run build
+npm run test
 ```
 
 ### Frontend

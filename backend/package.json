@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
+    "test": "npm run build && node --test dist/routes/caregivers/profile.rematch.test.js dist/services/matchingService.rematchStatus.test.js",
     "seed:dummy": "ts-node src/db/seedDummy.ts"
   },
   "keywords": [],

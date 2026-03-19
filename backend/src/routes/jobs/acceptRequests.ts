@@ -22,7 +22,8 @@ const getAuthenticatedCaregiverProfile = async (userId: string) => {
   return caregiverProfile;
 };
 
-// POST /api/jobs/:jobId/accept - Care seeker accepts one matched caregiver for a job
+// POST /api/jobs/:jobId/accept - Care seeker sends accept request to a matched caregiver
+// Multiple caregivers can have pending requests per job; prevents duplicate requests to same caregiver
 router.post(
   '/jobs/:jobId/accept',
   requireRole('care_seeker'),
@@ -49,17 +50,18 @@ router.post(
       throw new NotFoundError('Caregiver profile', caregiver_id);
     }
 
-    const existingRequest = await jobAcceptRequestRepository.findByCareRequestId(jobId);
-    if (existingRequest) {
-      if (existingRequest.caregiver_id === caregiver_id) {
-        res.json({
-          success: true,
-          data: existingRequest,
-        });
-        return;
-      }
-
-      throw new ConflictError('A caregiver has already been accepted for this care request');
+    // Check if this specific caregiver already has a request for this job
+    const existingRequestToThisCaregiver = await jobAcceptRequestRepository.findByCareRequestIdAndCaregiverId(
+      jobId,
+      caregiver_id
+    );
+    if (existingRequestToThisCaregiver) {
+      // Idempotent: return existing request if trying to re-send to same caregiver
+      res.json({
+        success: true,
+        data: existingRequestToThisCaregiver,
+      });
+      return;
     }
 
     const match = await matchRepository.findByRequestAndCaregiver(jobId, caregiver_id);

@@ -66,6 +66,29 @@ export const jobAcceptRequestRepository = {
     return firstRowOrNull(result);
   },
 
+  async findAllByCareRequestId(careRequestId: string): Promise<JobAcceptRequest[]> {
+    const db = getDatabase();
+    return await db<JobAcceptRequest[]>`
+      SELECT * FROM job_accept_requests
+      WHERE care_request_id = ${careRequestId}
+      ORDER BY created_at DESC
+    `;
+  },
+
+  async findByCareRequestIdAndCaregiverId(
+    careRequestId: string,
+    caregiverId: string
+  ): Promise<JobAcceptRequest | null> {
+    const db = getDatabase();
+    const result = await db<JobAcceptRequest[]>`
+      SELECT * FROM job_accept_requests
+      WHERE care_request_id = ${careRequestId}
+        AND caregiver_id = ${caregiverId}
+      LIMIT 1
+    `;
+    return firstRowOrNull(result);
+  },
+
   async findPendingByCaregiverId(caregiverId: string): Promise<JobAcceptRequestWithContext[]> {
     const db = getDatabase();
     const rows = await db<JobAcceptRequestWithJoinRow[]>`
@@ -145,6 +168,34 @@ export const jobAcceptRequestRepository = {
       accepted_caregiver_contact_email:
         request.status === 'accepted' ? request.caregiver_email ?? null : null,
     };
+  },
+
+  async findAllByCareRequestIdForSeeker(
+    careRequestId: string
+  ): Promise<JobAcceptRequestForSeeker[]> {
+    const db = getDatabase();
+    const rows = await db<JobAcceptRequestWithCaregiverEmailRow[]>`
+      SELECT
+        jar.*,
+        u.email AS caregiver_email
+      FROM job_accept_requests jar
+      LEFT JOIN caregiver_profiles cp ON cp.id = jar.caregiver_id
+      LEFT JOIN users u ON u.id = cp.user_id
+      WHERE jar.care_request_id = ${careRequestId}
+      ORDER BY jar.status = 'accepted' DESC, jar.created_at DESC
+    `;
+
+    return rows.map((request) => ({
+      id: request.id,
+      care_request_id: request.care_request_id,
+      caregiver_id: request.caregiver_id,
+      status: request.status,
+      created_at: request.created_at,
+      responded_at: request.responded_at,
+      is_accepted_by_caregiver: request.status === 'accepted',
+      accepted_caregiver_contact_email:
+        request.status === 'accepted' ? request.caregiver_email ?? null : null,
+    }));
   },
 
   async acceptByIdForCaregiver(

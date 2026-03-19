@@ -11,6 +11,8 @@ interface MatchResponse {
   job_id: string;
   matches: Match[];
   accept_request: JobAcceptRequest | null;
+  accept_requests: JobAcceptRequest[];
+  accept_requests_by_caregiver: Record<string, JobAcceptRequest>;
 }
 
 type JobResponse = CareRequest;
@@ -24,6 +26,7 @@ interface MatchedCaregiversData {
   job: CareRequest | null;
   matches: Match[];
   acceptRequest: JobAcceptRequest | null;
+  acceptRequestsByCaregiver: Record<string, JobAcceptRequest>;
 }
 
 const MatchedCaregivers: React.FC = () => {
@@ -32,7 +35,7 @@ const MatchedCaregivers: React.FC = () => {
 
   const fetchMatches = useCallback(async (): Promise<MatchedCaregiversData> => {
     if (!jobId) {
-      return { job: null, matches: [], acceptRequest: null };
+      return { job: null, matches: [], acceptRequest: null, acceptRequestsByCaregiver: {} };
     }
 
     const [matchesData, jobData] = await Promise.all([
@@ -44,6 +47,7 @@ const MatchedCaregivers: React.FC = () => {
       job: jobData || null,
       matches: matchesData.matches || [],
       acceptRequest: matchesData.accept_request || null,
+      acceptRequestsByCaregiver: matchesData.accept_requests_by_caregiver || {},
     };
   }, [jobId]);
 
@@ -55,14 +59,14 @@ const MatchedCaregivers: React.FC = () => {
     setError,
     reload,
   } = useDataLoading<MatchedCaregiversData, MatchesError>(fetchMatches, {
-    initialData: { job: null, matches: [], acceptRequest: null },
+    initialData: { job: null, matches: [], acceptRequest: null, acceptRequestsByCaregiver: {} },
     enabled: Boolean(jobId),
     mapError: (fetchError) => toDataLoadingError(fetchError, 'Failed to load matches'),
   });
 
   const matches = matchedData.matches;
   const job = matchedData.job;
-  const acceptRequest = matchedData.acceptRequest;
+  const acceptRequestsByCaregiver = matchedData.acceptRequestsByCaregiver;
   const missingJobError = !jobId ? { status: 400, message: 'Job ID is missing' } : null;
   const displayError = missingJobError || error;
 
@@ -100,7 +104,10 @@ const MatchedCaregivers: React.FC = () => {
       });
       setMatchedData((prev) => ({
         ...prev,
-        acceptRequest: response,
+        acceptRequestsByCaregiver: {
+          ...prev.acceptRequestsByCaregiver,
+          [caregiverId]: response,
+        },
       }));
       setSuccessMessage('Request sent to caregiver successfully.');
     } catch (err) {
@@ -246,7 +253,7 @@ const MatchedCaregivers: React.FC = () => {
                   match={match} 
                   formatDate={formatDate}
                   accepting={acceptingCaregiverId === match.caregiver_id}
-                  acceptRequest={acceptRequest}
+                  acceptRequest={acceptRequestsByCaregiver[match.caregiver_id] || null}
                   onAccept={handleAcceptMatch}
                 />
               ))}
@@ -279,20 +286,16 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({
     return null;
   }
 
+  const hasAcceptRequest = !!acceptRequest;
   const isAcceptedByCaregiver = acceptRequest?.is_accepted_by_caregiver === true;
   const acceptedCaregiverContactEmail = acceptRequest?.accepted_caregiver_contact_email ?? null;
-  const hasAcceptRequest = !!acceptRequest;
-  const isAcceptedCaregiver = acceptRequest?.caregiver_id === match.caregiver_id;
-  const isAnotherCaregiverAccepted = isAcceptedByCaregiver && !isAcceptedCaregiver;
-  const isDisabled = accepting || hasAcceptRequest;
+  const isDisabled = accepting || isAcceptedByCaregiver;
   const buttonLabel = accepting
     ? 'Sending...'
-    : isAnotherCaregiverAccepted
-      ? 'Another Caregiver Selected'
-    : isAcceptedCaregiver
+    : isAcceptedByCaregiver
+      ? 'Accepted'
+    : hasAcceptRequest
       ? 'Request Sent'
-      : hasAcceptRequest
-        ? 'Request Sent'
       : 'Accept Match';
 
   return (
@@ -300,8 +303,8 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({
       <div className={styles.cardHeader}>
         <div className={styles.caregiverNameAndStatusDiv}>
           <h3 className={styles.caregiverName}>{caregiver.name}</h3>
-          <span className={isAcceptedByCaregiver ? styles.accepted : styles.pending}>
-          {isAcceptedByCaregiver ? `Accepted` : `Pending` }
+          <span className={isAcceptedByCaregiver ? styles.accepted : hasAcceptRequest ? styles.pending : ''}>
+          {isAcceptedByCaregiver ? `Accepted` : hasAcceptRequest ? `Pending` : '' }
           </span>
         </div>
         <span className={styles.matchedDate}>
@@ -359,7 +362,7 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({
       </div>
 
       <div className={styles.cardFooter}>
-        {isAcceptedByCaregiver && isAcceptedCaregiver && acceptedCaregiverContactEmail ? (
+        {isAcceptedByCaregiver && acceptedCaregiverContactEmail ? (
           <a
             className={styles.contactButton}
             href={`mailto:${acceptedCaregiverContactEmail}`}
